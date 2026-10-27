@@ -8,7 +8,13 @@ from peeky.images import DEFAULT_IMAGE
 from peeky.models import Step
 from peeky.parser import read_steps
 from peeky.policy import PolicyError, validate_run_image
-from peeky.runner import InfrastructureError, create_command, execute, verify_environment
+from peeky.runner import (
+    InfrastructureError,
+    create_command,
+    execute,
+    inspect_final_state,
+    verify_environment,
+)
 from peeky.sources import SourceError, SourceSnapshot, fingerprint, snapshot
 
 pytestmark = pytest.mark.unit
@@ -77,3 +83,73 @@ def test_host_proxy_or_secret_environment_cannot_enter_container() -> None:
     assert caught.value.reason == "CONTAINER_ENVIRONMENT_MISMATCH"
     with pytest.raises(InfrastructureError, match="Duplicate"):
         verify_environment({"Env": [*allowed, "HTTP_PROXY=secret-must-not-shadow-empty"]}, image)
+
+
+def test_T014_delayed_oom_flag_preserves_both_state_observations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first: dict[str, object] = {"Status": "exited", "ExitCode": 137, "OOMKilled": False}
+    final = {**first, "OOMKilled": True}
+    sequence = iter((first, final))
+    monkeypatch.setattr("peeky.runner._json", lambda *args, **kwargs: next(sequence))
+    monkeypatch.setattr("peeky.runner.time.sleep", lambda seconds: None)
+    result, observations = inspect_final_state("docker", "owned-container")
+    assert result == final and observations == [first, final]
+
+
+def test_T014_unconfirmed_137_has_bounded_probes_even_if_clock_stalls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+    state: dict[str, object] = {"Status": "exited", "ExitCode": 137, "OOMKilled": False}
+
+    def inspect(*args: Any, **kwargs: Any) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return dict(state)
+
+    monkeypatch.setattr("peeky.runner._json", inspect)
+    monkeypatch.setattr("peeky.runner.time.sleep", lambda seconds: None)
+    monkeypatch.setattr("peeky.runner.time.monotonic", lambda: 0.0)
+    result, observations = inspect_final_state("docker", "owned-container")
+    assert calls == 6 and len(observations) == 6 and result["OOMKilled"] is False
+
+
+def test_T014_state_settle_deadline_prevents_more_probes(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = iter((0.0, 1.01))
+    state: dict[str, object] = {"Status": "exited", "ExitCode": 137, "OOMKilled": False}
+    calls = 0
+
+    def inspect(*args: Any, **kwargs: Any) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return dict(state)
+
+    monkeypatch.setattr("peeky.runner._json", inspect)
+    monkeypatch.setattr("peeky.runner.time.monotonic", lambda: next(clock))
+    result, observations = inspect_final_state("docker", "owned-container")
+    assert calls == 1 and observations == [state] and result["OOMKilled"] is False
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        {"Status": "exited", "ExitCode": 0, "OOMKilled": False},
+        {"Status": "exited", "ExitCode": 1, "OOMKilled": False},
+        {"Status": "running", "ExitCode": 137, "OOMKilled": False},
+        {"Status": "exited", "ExitCode": 137, "OOMKilled": True},
+    ],
+)
+def test_T014_other_states_are_not_polled(
+    monkeypatch: pytest.MonkeyPatch, state: dict[str, object]
+) -> None:
+    calls = 0
+
+    def inspect(*args: Any, **kwargs: Any) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return state
+
+    monkeypatch.setattr("peeky.runner._json", inspect)
+    result, observations = inspect_final_state("docker", "owned-container")
+    assert calls == 1 and result == state and observations == [state]
