@@ -1,0 +1,21 @@
+# Template only; parsed in a later phase. Not enforced automatically by current scaffold.
+[execution]
+image = "python:3.12-slim" # replace with verified immutable digest for benchmark/release
+network = "none"
+timeout_seconds_per_command = 20
+memory = "256m"
+cpus = "1"
+pids_limit = 64
+approval_required = true
+
+[model]
+enabled = false
+provider = "openai_compatible"
+model_name = "Qwen2.5-Coder-7B-Instruct"
+# Read endpoint and API key from environment; never write credentials into TOML.
+
+[benchmark]
+enabled = false
+max_agent_steps = 8
+max_tokens = 8000
+replicates = 2

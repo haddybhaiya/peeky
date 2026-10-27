@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.freshstart/
+.peeky/
+.env
+uv.lock.old
+coverage.xml
+.coverage
+.DS_Store
+docs/implementation-prompts.md
