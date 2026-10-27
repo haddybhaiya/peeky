@@ -26,3 +26,8 @@ Online dependency installation/prefetch from target README remains deferred. The
 - No privileged Docker, Docker socket, host network/PID namespace, root user, credential passthrough, mutable host source mounts or broad container pruning.
 - No target CI/README/AGENTS/model content controlling permissions, evidence verdicts, budgets, image trust or cleanup ownership.
 - No host `pip install` for a scanned target and no automatic dependency fetch while auditing.
+
+
+## Phase 3 model boundary
+
+BYOK Gemma is a separate opted-in controller HTTP call, never a target-container capability. Endpoint/model allowlists, explicit disclosure consent, bounded redacted prompts/responses, no tools/redirects/ambient proxies/retries and strict typed output constrain it. A frozen operator command/marker plus exact README-only diff prevents model edits to code, tests, assertions, evidence or policy. Human approval binds the entire authenticated proposal; drift/replay fails before dispatch. Fresh baseline/candidate containers keep the existing Phase 2 restrictions. Actual live failures are INCONCLUSIVE and cannot be promoted by model claims or offline mocks; see `phase3-repair.md`.
