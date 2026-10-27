@@ -41,6 +41,23 @@ def build_parser() -> argparse.ArgumentParser:
     passport.add_argument("repo", type=Path)
     passport.add_argument("--evidence", type=Path, required=True)
     passport.add_argument("--output", type=Path, default=Path("AGENTS.generated.md"))
+    diagnosis = commands.add_parser("diagnose", help="Opt in to one bounded README patch proposal")
+    diagnosis.add_argument("repo", type=Path)
+    diagnosis.add_argument("--evidence", type=Path, required=True)
+    diagnosis.add_argument("--expected-command", required=True)
+    diagnosis.add_argument("--expected-stdout", required=True)
+    diagnosis.add_argument("--model-consent", action="store_true")
+    diagnosis.add_argument("--env-file", type=Path)
+    diagnosis.add_argument("--output", type=Path, default=Path(".peeky/repairs/proposals"))
+    diagnosis.add_argument("--state", type=Path, default=Path(".peeky/repair-attempts"))
+    recheck = commands.add_parser(
+        "recheck", help="Recheck the exact human-approved README proposal"
+    )
+    recheck.add_argument("repo", type=Path)
+    recheck.add_argument("--proposal", type=Path, required=True)
+    recheck.add_argument("--approve-proposal", required=True)
+    recheck.add_argument("--output", type=Path, default=Path(".peeky/repairs/rechecks"))
+    recheck.add_argument("--state", type=Path, default=Path(".peeky/repair-attempts"))
     return parser
 
 
@@ -48,6 +65,40 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command in {"diagnose", "recheck"}:
+            from .providers.openai_compatible import load_config
+            from .repair import FrozenOracle, diagnose, load_record, recheck
+
+            if args.command == "diagnose":
+                if not args.model_consent:
+                    print(
+                        "Model disclosure not authorized; pass --model-consent after review.",
+                        file=sys.stderr,
+                    )
+                    return 2
+                config = load_config(args.env_file)
+                path = diagnose(
+                    args.repo,
+                    args.evidence,
+                    FrozenOracle(args.expected_command, args.expected_stdout),
+                    config,
+                    args.output,
+                    args.state,
+                    consent=True,
+                )
+            else:
+                path = recheck(
+                    args.repo, args.proposal, args.approve_proposal, args.output, args.state
+                )
+            data = load_record(path)
+            print(f"Evidence: {path}")
+            print(f"Status: {data['status']}")
+            if data["status"] == "PROPOSED":
+                print(data["proposal"]["candidate_diff"])
+                print(
+                    f"Review this exact proposal, then --approve-proposal {data['approval_digest']}"
+                )
+            return 0 if data["status"] in {"PROPOSED", "VERIFIED"} else 3
         if args.command == "doctor":
             status = doctor()
             print(json.dumps(status, sort_keys=True) if args.json else f"Docker: {status}")
