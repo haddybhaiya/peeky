@@ -1,4 +1,5 @@
 """Extract *explicitly opted-in* single-command fenced README blocks."""
+
 from __future__ import annotations
 
 import re
@@ -29,7 +30,7 @@ def extract_steps(content: str) -> list[Step]:
             if stripped and not stripped.startswith("#"):
                 if len(stripped) > 400:
                     raise ParseError(f"Command over length limit on line {number}")
-                steps.append(Step(f"step-{len(steps)+1:03d}", stripped, number))
+                steps.append(Step(f"step-{len(steps) + 1:03d}", stripped, number))
                 if len(steps) > 12:
                     raise ParseError("More than 12 annotated commands")
     if fenced:

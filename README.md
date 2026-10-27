@@ -30,17 +30,21 @@ For contributors:
 
 ```bash
 python -m pip install uv==0.12.19
-uv sync
-uv run pytest tests/unit tests/smoke -m 'not live and not docker'
-uv run python scripts/check_docs.py
-uv run python scripts/smoke_wheel.py
+uv sync --locked
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy src tests
+uv run --locked pytest tests/unit tests/smoke -m 'not live and not docker'
+uv run --locked python scripts/check_docs.py
+uv build --wheel
+uv run --locked python scripts/smoke_wheel.py
 ```
 
 ## Deliverable boundaries
 
 **Hackathon MVP target:** local Python repo; annotated README setup/smoke steps; restricted Docker execution; failure classification; opt-in open coding model generating a proposed doc patch; independent clean recheck; verified `AGENTS.generated.md`; one fixed controlled cold-start comparison; evidence JSON + Markdown; 3 deterministic fixtures; 90–120-second screen-recordable demo. No hosted backend, arbitrary GitHub scraping, auto-merge or public remote execution.
 
-See `docs/phase.md` for exact implementation gates, `docs/architecture.md`, `docs/runner-security.md`, `docs/test-plan.md`, `docs/open-models.md`, and `docs/implementation-prompts.md`.
+See `docs/phase.md` for exact implementation gates, `docs/architecture.md`, `docs/runner-security.md`, `docs/test-plan.md`, `docs/open-models.md`, and `docs/decisions.md`.
 
 The [repository analysis](docs/repository-analysis.md) records the current implementation, validation results and remaining trust-boundary gaps. The chosen distribution, import and CLI name is `peeky`; package-index availability has not been checked.
 
@@ -63,7 +67,7 @@ python -m compileall -q .
 
 ## Build reproducibility
 
-The dev dependencies are pinned in `pyproject.toml` but **no `uv.lock` is included**: the ZIP build environment could not resolve PyPI. The GitHub CI runs `uv sync` (unlocked) accordingly. Generate and commit `uv.lock` using `uv lock` once online, then update the workflow to `uv sync --locked` before final submission. The 2026-10-27 local review built and installed the renamed wheel and passed unit/smoke and type checks, but found Ruff failures. These local checks used Python 3.13 and locally available tooling; they do not establish pinned-environment or CI success. See [the evidence ledger](docs/work_review.md).
+`uv.lock` records the resolved development dependencies, and CI installs them with `uv sync --locked`. Use the locked contributor commands above to reproduce the local gate. The wheel smoke check installs the built artifact without network access in a clean temporary environment and runs both its module and installed console command outside this checkout. Local validation and deferred Docker checks are recorded separately in [the evidence ledger](docs/work_review.md); a local pass does not establish CI or full product success.
 
 ## Important notes
 

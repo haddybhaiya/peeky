@@ -1,4 +1,5 @@
 """Credential-free CLI for the initial Peeky foundation."""
+
 from __future__ import annotations
 
 import argparse
@@ -25,7 +26,9 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--json", action="store_true")
     audit = commands.add_parser("audit", help="Run approved smoke steps inside Docker")
     audit.add_argument("repo", type=Path)
-    audit.add_argument("--approve", action="store_true", help="Acknowledge listed commands may execute")
+    audit.add_argument(
+        "--approve", action="store_true", help="Acknowledge listed commands may execute"
+    )
     audit.add_argument("--image", default="python:3.12-slim")
     audit.add_argument("--output", type=Path, default=Path(".peeky/runs"))
     passport = commands.add_parser("passport", help="Create candidate onboarding instructions")
@@ -65,7 +68,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "audit":
             validate_image(args.image)
             if not args.approve:
-                print("Execution not authorized. Review with `inspect` then pass --approve.", file=sys.stderr)
+                print(
+                    "Execution not authorized. Review with `inspect` then pass --approve.",
+                    file=sys.stderr,
+                )
                 return 2
             if not steps:
                 print("No opted-in `bash peeky` steps; no execution.", file=sys.stderr)
@@ -82,9 +88,18 @@ def main(argv: list[str] | None = None) -> int:
                     break
             path = write_report(report(repo, args.image, steps, results), args.output)
             print(f"Evidence: {path}")
-            return 0 if len(results) == len(steps) and all(r.outcome == "PASS" for r in results) else 1
+            return (
+                0 if len(results) == len(steps) and all(r.outcome == "PASS" for r in results) else 1
+            )
         parser.error("Unknown command")
-    except (OSError, ParseError, PolicyError, PassportError, ValueError, json.JSONDecodeError) as exc:
+    except (
+        OSError,
+        ParseError,
+        PolicyError,
+        PassportError,
+        ValueError,
+        json.JSONDecodeError,
+    ) as exc:
         print(f"Peeky: {exc}", file=sys.stderr)
         return 3
     return 3

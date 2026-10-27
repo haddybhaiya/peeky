@@ -8,11 +8,11 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "38653fb6b54777b56c21444329172c3fa1ba65f3ccb7dad46221ae296bddff27"
+      "sha256": "dcedc935c20ba8a1b935f3afa7a669c69008a1c64d4b8375d948c604c69829d3"
     },
     {
       "path": ".gitignore",
-      "sha256": "bff1a4207f8ab428f9f6e6f3b970e8c6299ed5e58d75eb2429443d35fcb9f7dd"
+      "sha256": "35f95f947801c0ea475cc7703a1c7a54ab740a9cafb2cfe50ee13b11901536f6"
     },
     {
       "path": "AGENTS.md",
@@ -20,7 +20,7 @@
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "eca2aafde05d6c1bc62688eafdb3f6b4a574efcfe3946915776495f55878071b"
+      "sha256": "4bcda38c62cd0a8bb62f919385a3b55b110c048596a5540daf36602001c94a28"
     },
     {
       "path": "LICENSE",
@@ -28,7 +28,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "12d710e2bcb918cd8058d4dde8338b2cddd64c3c466ed492c11da8791192a7a3"
+      "sha256": "9f3a2176dd1a475632f066e228ea77a06b883e989788a62d02f5aa8ac86634d9"
     },
     {
       "path": "SECURITY.md",
@@ -44,11 +44,11 @@
     },
     {
       "path": "docs/assumptions.md",
-      "sha256": "8bd65ec9b343a9401a264c888985c73f3292e1a7cce3f3d952a7b3256573c301"
+      "sha256": "84ae686af4a89650720fae7d6b189e7847ee0b6498b097b74fd862bce4799a16"
     },
     {
       "path": "docs/decisions.md",
-      "sha256": "9c77f8f4da37da8dc18246b017312d404144df14278aceb3902dc460ee6e2ab4"
+      "sha256": "fbfc259b01c1fa6a9f708cd665d4ab409db8d3ad1f3e5898ab9d502403cba82e"
     },
     {
       "path": "docs/demo-plan.md",
@@ -61,10 +61,6 @@
     {
       "path": "docs/evidence-contract.md",
       "sha256": "e1a53458965f53a45cf11faba89ba39a47fce95d0fa88b950010823acc0791e1"
-    },
-    {
-      "path": "docs/implementation-prompts.md",
-      "sha256": "7f4e8cc8f8c4347f7da5f33bb3b62e28fed9890deb524c12b8fe5c534e64532e"
     },
     {
       "path": "docs/invariants.md",
@@ -80,11 +76,15 @@
     },
     {
       "path": "docs/phase.md",
-      "sha256": "534d7d844a46465bf5af67b5816d62970cbf18c29da33886438f9f8aa4472251"
+      "sha256": "01cc94c94b1aa2b7ca8d28a33f819b4848749da4590b091409bbf5717ab1ba22"
     },
     {
       "path": "docs/product-brief.md",
       "sha256": "b5a70f0b8ca09a1a2eac90a016b07d54f92ca587a253d6c20be75993b4ad4f4b"
+    },
+    {
+      "path": "docs/repository-analysis.md",
+      "sha256": "55a8357d2a56d41b79318b20f877c794d8c4e82c86aaa1f7a5df48521c3609d6"
     },
     {
       "path": "docs/requirements-traceability.md",
@@ -100,7 +100,7 @@
     },
     {
       "path": "docs/test-plan.md",
-      "sha256": "825aeed8a239bb3da0c0bdbefc608866dd03c8d9b91548092c2e175424e1c90d"
+      "sha256": "11619e0625a3cf87aa9dc270d775129b2fa15819a90159f0069ed2789f204257"
     },
     {
       "path": "docs/threat-model.md",
@@ -108,7 +108,7 @@
     },
     {
       "path": "docs/work_review.md",
-      "sha256": "2fc755292630f60afd97aecb6e7b2aa5bdda2c990a94db80b6f34f0b9bbc063d"
+      "sha256": "b2090884c215040bc1e6375c2b946f6b98eaa1dcc8a59055e8b68a121e55b932"
     },
     {
       "path": "peeky.example.toml",
@@ -120,15 +120,15 @@
     },
     {
       "path": "scripts/check_docs.py",
-      "sha256": "09974415290224b4050da7410b8f6029f15c06cd6c1d614945862c770631dd04"
+      "sha256": "81716be8f83727faaeeaa41edbc4cc9c57b1251a4475410c20eb676f07e36740"
     },
     {
       "path": "scripts/smoke_wheel.py",
-      "sha256": "4d90a6e9e875699e8bd6e098b2fbd02c56e4d8c1ae3b63d8f0c1119c355681eb"
+      "sha256": "befea2e19eb022f33ac5e03a7d565fb73f095aa839154392b23767be1293a36f"
     },
     {
       "path": "src/peeky/__init__.py",
-      "sha256": "71ce0331fb72d3370eebbfdd6a1efd5badd58572ee2a1f580c93bb2e9e64512a"
+      "sha256": "cbad7a8da3b461359c60ce6578c04ebc40e2d0b03b33616638d819305cfaea63"
     },
     {
       "path": "src/peeky/__main__.py",
@@ -136,31 +136,31 @@
     },
     {
       "path": "src/peeky/cli.py",
-      "sha256": "1dc1943dd7fd5fe5f578a5431a1d210029f3b79beb8d0a859dd2171808d33dc2"
+      "sha256": "0341b9010408ba941ca17f115dba384b52bf942f87bdb2f4bf0af1ab6059439b"
     },
     {
       "path": "src/peeky/evidence.py",
-      "sha256": "38faf01be2611a37f8c5f1e1756f0e3ef600b5496088643d0da18b08345e667d"
+      "sha256": "d81549310cb2e2c012323a88db1c98e901a69f6ab902b28d813af764fa01b8b4"
     },
     {
       "path": "src/peeky/models.py",
-      "sha256": "699e9a68b0d9939b0bedc3bf513ba28577dd268be6cbc9d1d9f738444cac3432"
+      "sha256": "23ec5a92f5801b63d340ae29b0d294bd96b2f3c1a97571cbdf292cec237cfcf3"
     },
     {
       "path": "src/peeky/parser.py",
-      "sha256": "50901e4ccf6773d18b2fca263512ac10e894f6df905670f7ecceff4efcf2148a"
+      "sha256": "0c00fcff825a6dfe0f17b849aaed88343754e2cd910593710af5be90982cbecb"
     },
     {
       "path": "src/peeky/passport.py",
-      "sha256": "c35d7dbbbeefb8d857ac9e2cee0f21f3aa38de08bea304118797ba7e5728d9bd"
+      "sha256": "e674a0998b44a25b2f5d44581fa43409b2e90aeb0021c00686acf37d5901ac75"
     },
     {
       "path": "src/peeky/policy.py",
-      "sha256": "e5442a8a77f3aa0aafc3005462e1e25d202f7792fc82750e489dc876db248c36"
+      "sha256": "81efb53f3066b8174bed3e16d07db746a0ed1c0e21dc7d4b42d6fdbca55fda35"
     },
     {
       "path": "src/peeky/runner.py",
-      "sha256": "6bd870e5cfc53f47e991eeccf8c223401386b991a6979d0a4d2daa1ba12dfec9"
+      "sha256": "1452031a21d219bde56d107c40c52664cdf176ed00cf5ffbff09b0b4ac889932"
     },
     {
       "path": "tests/fixtures/bad_repo/README.md",
@@ -180,11 +180,11 @@
     },
     {
       "path": "tests/integration/test_docker.py",
-      "sha256": "06add6ee901fe61dac7a89ec528cca9588f804be346ac0b4c3c778a2ffea53a9"
+      "sha256": "7e3e70870ecf302ff7df77db588f15d6f26cafdd67d7cf332011bc87bf21ef23"
     },
     {
       "path": "tests/smoke/test_cli.py",
-      "sha256": "092ec51e26c3088a51a8a2904a390ba8c05998097d91c255f9c50a2b6eaf55c4"
+      "sha256": "7a79d04a86fcd7a53c5a59f263068dd370f81daf30a416c5250e3c1a405aab44"
     },
     {
       "path": "tests/unit/test_parser.py",
@@ -192,19 +192,19 @@
     },
     {
       "path": "tests/unit/test_passport.py",
-      "sha256": "c83220ced409d17721bf10748f3f984e15fa4e01676bb8dce2ea09dab06ef206"
+      "sha256": "c71ea92b0b5620f47cc9e1fc8ce318ca20ca3140528d30e1f363ba3980eb1928"
     },
     {
       "path": "tests/unit/test_policy.py",
-      "sha256": "5d0908c40ddaca7adcfc7944273190bc0e228aef54fe305061f43c806b071307"
+      "sha256": "3ca89785602a62feaa6041b8aec64efa19488d5e0a1be5e2c84da2f10cb4cc7f"
     },
     {
       "path": "tests/unit/test_verdict.py",
       "sha256": "2658f519b518f47dcc879eb4a8e2ef2928fe13760e2b092f137cdb8c1e6114ef"
     },
     {
-      "path": "docs/repository-analysis.md",
-      "sha256": "ec7ebd1de7ed6d1c163f41a85821beee74fed6590d02fcdd0e23f924ef2d5c73"
+      "path": "uv.lock",
+      "sha256": "bb5650b0ba6126b7ccf2b707af42a1ebb3b524ea3cfca6545223c963449c12e8"
     }
   ]
 }

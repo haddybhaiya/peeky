@@ -1,4 +1,5 @@
 """Immutable records: data from targets never decides trusted policy."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
