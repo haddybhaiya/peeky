@@ -13,9 +13,14 @@ def test_passport_rejects_failed_and_changed_evidence(tmp_path: Path) -> None:
     repo.mkdir()
     (repo / "README.md").write_text("# demo", encoding="utf-8")
     evidence = tmp_path / "evidence.json"
-    raw = {"schema_version": "1.0", "verdict": "FAIL", "repo": str(repo.resolve()),
-           "readme_sha256": sha256_file(repo / "README.md"),
-           "steps": [{"command": "python smoke.py"}], "results": [{"outcome": "PASS"}]}
+    raw = {
+        "schema_version": "1.0",
+        "verdict": "FAIL",
+        "repo": str(repo.resolve()),
+        "readme_sha256": sha256_file(repo / "README.md"),
+        "steps": [{"command": "python smoke.py"}],
+        "results": [{"outcome": "PASS"}],
+    }
     evidence.write_text(json.dumps(raw), encoding="utf-8")
     with pytest.raises(PassportError):
         make_passport(repo, evidence)

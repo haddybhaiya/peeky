@@ -56,3 +56,37 @@
 **Phase gate:** Phase 0 remains incomplete due to observed Ruff failures and outstanding pinned-environment validation. Phase 2 Docker checks are BLOCKED/INCONCLUSIVE, not verified. No phase has been promoted.
 
 **Next task:** finish Phase 0 formatting/import and pinned-environment checks, then Phase 1 immutable source/evidence identity and T-001..T-008. Restore a real Docker runner before attempting the Phase 2 gate.
+
+## 2026-10-27 — Phase 0 local foundation gate completed
+
+**Authorization:** the owner requested completion of Phase 0 and deferred the two Docker tests until Docker is running. Those cases remain pending Phase 2 integration; they are not failures or passes in this gate.
+
+**Changed:** created `uv.lock` from the existing dependency declarations; both CI jobs now sync and run with `--locked`. Fixed two import-spacing errors and formatted 13 Python files. No product runtime behavior or test assertions changed: AST comparison against HEAD confirmed equality in all 16 source/test Python files. The wheel smoke script selects the matching project version, requires one wheel, installs without network/dependencies, clears Python source-path overrides, and runs the installed module and console command outside the checkout. The docs gate checks 14 public contract files instead of depending on an intentionally ignored local prompts file. Added `.peeky/` to ignores while retaining the owner's existing `.freshstart/` entry and local-prompts ignore. The refreshed public-file manifest includes `uv.lock` and excludes the ignored prompts file without deleting it.
+
+**Environment:** Windows, Python 3.13.7, uv 0.12.23. The new `.venv` contains the declared pytest 9.1.1, Ruff 0.16.10 and mypy 2.4.0; build resolved to 1.6.1 in the lock. Base revision `a68c595`; nothing staged or committed by this task. Python 3.12/Linux and GitHub Actions were not executed here.
+
+| Completed command/check | Result |
+|---|---|
+| `uv sync --python C:\Users\hp\AppData\Local\Programs\Python\Python313\python.exe` | Resolved and installed 16 packages; created lock and isolated `.venv` |
+| `uv sync --locked --offline --python C:\Users\hp\AppData\Local\Programs\Python\Python313\python.exe` | Resolved/checked 16 packages successfully from cache; lock unchanged |
+| `.venv\Scripts\ruff.exe check . --fix` | Fixed 2 import-formatting errors, 0 remaining |
+| `.venv\Scripts\ruff.exe format .` | 13 files formatted; 5 unchanged |
+| `.venv\Scripts\ruff.exe check .` | All checks passed |
+| `.venv\Scripts\ruff.exe format --check .` | All 18 files already formatted |
+| `.venv\Scripts\mypy.exe src tests` | Success: 16 source files |
+| Initial sandbox `.venv` unit/smoke run | 18 passed, 1 setup error: permission denied reading existing pytest temp directory; not counted as gate success |
+| `uv run --locked pytest tests/unit tests/smoke -m 'not docker and not live' -q` outside sandbox | 19 passed in 0.25s; 0 skipped |
+| `.venv\Scripts\python.exe scripts/check_docs.py` | 14 required files checked |
+| Public-checkout docs smoke | Copied current public tracked files into a temporary directory; checker passed with the ignored local prompts absent |
+| `.venv\Scripts\peeky.exe --version`, `--help`, `inspect tests/fixtures/good_repo --json` | Correct identity/help and one proposed step; no target execution |
+| `uv build --offline --wheel` | Built `dist/peeky-0.1.0.dev0-py3-none-any.whl` |
+| `.venv\Scripts\python.exe scripts/smoke_wheel.py` | Clean venv installed wheel with `--no-index --no-deps`; isolated module version, console version and console inspect all passed |
+| Source/test AST comparison | All 16 controller/test Python files match HEAD behavior/assertions |
+
+**Docs updated:** phase tracker, assumptions A-01/A-11, ADR-009, README, contributor setup, test plan, repository analysis and this ledger. Earlier validation records remain historical.
+
+**Known limits:** 2 Docker tests deferred by the owner and not rerun in this completion task. No target code executed on the host. CI/Python 3.12, immutable source capture, strengthened evidence/passports, runner hardening, model repair and agent benchmarks remain unverified or unimplemented as documented. The initial sandbox permission error was resolved by rerunning the trusted controller tests outside the sandbox; no assertions were relaxed.
+
+**Phase gate:** Phase 0 VERIFIED for the local foundation checks above. This is not a target/product PASS and does not promote Phase 2. The Docker acceptance criteria are unchanged.
+
+**Next task:** Phase 1 immutable source identities, snapshots and T-001..T-008. Once Docker is running, execute `uv run --locked pytest tests/integration -m docker` and record actual outcomes before claiming a Docker gate.

@@ -50,4 +50,4 @@
 
 ## CI gates and counts
 
-Core job: `uv sync`; `ruff check`, `ruff format --check`, `mypy`, tests excluding docker/live, docs checker, wheel build/install. Docker job: explicit image pull and `pytest -m docker`. No CI key. Record tests run/skipped in work review. **Coverage percentages or passed tests cannot be claimed from this document alone.**
+Core job: `uv sync --locked`; `ruff check`, `ruff format --check`, `mypy`, tests excluding docker/live, public docs checker, wheel build and isolated installed-module/console smoke. Docker job: locked dependency sync, explicit image pull and `pytest -m docker`. No CI key. Phase 0 passed locally on Python 3.13.7; the owner deferred both local Docker cases until the daemon is running. Record tests run/skipped/deferred in work review. **Coverage percentages or passed tests cannot be claimed from this document alone.**

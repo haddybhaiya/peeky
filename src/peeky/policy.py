@@ -1,11 +1,14 @@
 """Pre-execution policy. Never interpret README text as controller policy."""
+
 from __future__ import annotations
 
 import re
 import shlex
 
+
 class PolicyError(ValueError):
     pass
+
 
 _ALLOWED_BINARIES = {"python", "python3", "pytest"}
 

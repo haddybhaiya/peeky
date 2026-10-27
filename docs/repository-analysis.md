@@ -1,6 +1,6 @@
 # Peeky repository analysis
 
-Reviewed 2026-10-27. This describes the working tree, including its untracked scaffold files; it does not certify a committed release or CI run. The active prerequisite is Phase 0. Later phases remain planned or partial.
+Reviewed 2026-10-27; updated after the Phase 0 completion pass. The initial review covered an untracked scaffold; it has since been committed by the owner, and this follow-up describes changes on top of `a68c595`. Phase 0's local foundation gate is now verified. This does not certify a release or CI run. Phase 1 is next; later phases remain planned or partial.
 
 ## Purpose and current flow
 
@@ -17,7 +17,7 @@ The current flow is `inspect -> policy validation -> approved audit -> JSON evid
 | `evidence.py` | Reduces step outcomes and writes uniquely named JSON records |
 | `passport.py` | Produces candidate onboarding text after basic evidence and README checks |
 | `tests/` | Parser, policy, verdict and passport units; CLI smoke; two Docker fixture cases |
-| `.github/workflows/ci.yml` | Declares core and Docker jobs; their presence is not evidence that CI passed |
+| `.github/workflows/ci.yml` | Declares core and Docker jobs with locked dependency installation; their presence is not evidence that CI passed |
 
 There is no immutable source capture, persistent run state machine, model provider, repair engine, clean-retest controller, agent benchmark harness or Markdown report exporter. `peeky.example.toml` and model environment variables are templates and are not consumed by the CLI.
 
@@ -49,11 +49,11 @@ Pure controller probes observed INCONCLUSIVE for a failed first step with one re
 
 Both tests in `tests/integration/test_docker.py` call `pytest.skip` when the daemon is unavailable. CI runs those same tests, so a successful pytest exit does not by itself prove that the Docker gate executed. CI also pulls a mutable image tag. Required integration should distinguish a deliberately optional local skip from a failed prerequisite on the integration worker. Current coverage does not implement all T-009..T-017 scenarios.
 
-### 6. Phase 0 validation is still incomplete
+### 6. Phase 0 validation gaps resolved locally
 
-The existing 19 unit/smoke cases pass after the rename, and an offline wheel builds. Local Ruff 0.16.3 reports two import-spacing errors and 13 files requiring formatting. These findings correspond to scaffold formatting already visible before the rename; no behavior or assertions were changed to conceal them. They remain unfixed because this task is a rename and review.
+The follow-up completion task installed the declared pinned development group and generated `uv.lock`. Ruff 0.16.10 fixed the two import-spacing errors and formatted 13 files; all 18 Python files now pass formatting. Ruff lint, mypy 2.4.0 and all 19 unit/smoke cases pass. AST comparison against HEAD confirmed no behavior/assertion changes in the 16 controller/test Python files. The offline wheel build and installed-module/console smoke pass outside the source checkout.
 
-There is no `uv.lock`. Local tooling differs from the pinned development group, so local results do not verify a reproducible pinned environment or Python 3.12. Exact completed commands and integration outcomes are recorded in `work_review.md`.
+The docs gate now checks 14 public required files and succeeds in a temporary public-checkout copy without the ignored local prompts file. CI uses locked dependency sync. Local validation used Python 3.13.7; Python 3.12 and remote CI remain unverified. The owner deferred Docker integration, which is not required to establish the Phase 0 foundation gate. Findings 1-5 remain open. Exact completed commands and integration limits are recorded in `work_review.md`.
 
 ## Rename scope
 
@@ -61,6 +61,6 @@ The project display name is Peeky. The distribution, import and executable are `
 
 ## Next work in phase order
 
-Finish Phase 0: resolve formatting/import defects and validate the pinned development environment, retaining the passing wheel installation smoke and recording the required checks. Then implement Phase 1 immutable source identity and behavior tests for T-001..T-008. Phase 2 should address runner capture/cleanup, digest enforcement, redaction, coverage/verdict semantics and genuine Docker gates before model repair or benchmark work starts.
+Phase 0 is complete locally. Next implement Phase 1 immutable source identity and behavior tests for T-001..T-008. Phase 2 should address runner capture/cleanup, digest enforcement, redaction, coverage/verdict semantics and genuine Docker gates before model repair or benchmark work starts. Run the two deferred integration tests once Docker is available; do not promote Phase 2 on skipped checks.
 
 No security fixes, model calls, benchmark results, Git staging/commits or remote writes are part of this review.

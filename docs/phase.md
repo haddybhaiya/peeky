@@ -4,20 +4,20 @@ Statuses: `SCAFFOLD_DONE` means files exist and local tests may pass, **not** en
 
 | Phase | Purpose | Status | Required gate |
 |---|---|---|---|
-| 0 | Contract, repo scaffold, CLI, CI, fixtures, docs | SCAFFOLD_DONE (subject to validation) | CLI help/inspect + unit tests + wheel smoke + docs check |
+| 0 | Contract, repo scaffold, CLI, CI, fixtures, docs | VERIFIED (local foundation gate, Python 3.13) | Locked sync + lint/format/type + CLI help/inspect + unit tests + wheel smoke + docs check |
 | 1 | Immutable source snapshot, run policy, deterministic evidence | PLANNED | FS-001/002 + T-001..T-008 |
 | 2 | Real Docker smoke audit across good/bad/blocked fixtures | PARTIAL (scaffold runner exists) | FS-003/004 + T-009..T-017 on clean runner |
 | 3 | Open coding-model diagnosis + docs-only repair + clean retest | PLANNED | FS-005/006 + T-018..T-025 |
 | 4 | Agent onboarding passport + matched cold-start benchmark | PARTIAL (passport scaffold exists) | FS-007/008 + T-026..T-032 |
 | 5 | Polish, evidence bundle, README, demo, submission review | PLANNED | FS-009/010 + T-033..T-037 |
 
-**Active work on 2026-10-27:** Phase 0 identity rename and repository review. The package/CLI is now `peeky`; FS acceptance IDs remain unchanged. Unit/smoke tests, type checks, documentation presence, offline wheel build and installed-wheel smoke passed locally. The Phase 0 gate remains incomplete: Ruff reports import/formatting defects, and pinned-environment validation is outstanding. Both Docker integration tests skipped because the daemon was unavailable. See `docs/work_review.md` for exact checks and `docs/repository-analysis.md` for implementation gaps. Do not advance to Phase 1 until prerequisite checks pass.
+**Current position on 2026-10-27:** Phase 0 is complete under the local foundation gate: locked dependency sync, Ruff lint/format, mypy, 19 unit/smoke tests, CLI help/inspect, public-checkout documentation validation, wheel build and isolated installed-module/console smoke all passed. Python 3.13.7 and the declared pinned development tools were used. CI and Python 3.12 execution are not claimed. The owner deferred the two Docker tests until Docker is running; they belong to Phase 2 and are not counted as passes or failures here. Phase 1 is next, not implemented by this task. FS/T acceptance IDs remain unchanged. See `docs/work_review.md` for exact evidence and `docs/repository-analysis.md` for open product gaps.
 
 **DO NOT schedule Phase 6+ as part of the hackathon.** Remote public GitHub write automation, language expansion, marketplace, vector memory, recurring hosted agents are separately deferred.
 
 ## Phase 0 — Package and CI foundations
 
-Build: `pyproject.toml` (same Hatchling/strict-dev-group pattern as Recheck), `AGENTS.md`, CLI commands, fixtures, docs and CI. Gate: `uv sync`, lint/type, unit/smoke, doc check, wheel creation and installed wheel CLI smoke. No model costs. Record exact validation output in work review.
+Build: `pyproject.toml`, `uv.lock` (Hatchling/strict-dev-group pattern), `AGENTS.md`, CLI commands, fixtures, public docs and locked CI dependency setup. Gate: `uv sync --locked`, lint/format/type, unit/smoke, doc check, wheel creation and isolated installed wheel CLI smoke. Completed locally; see the Phase 0 completion entry in work review. This foundation gate does not establish target execution, model repair or benchmark success. Docker integration remains a Phase 2 gate. No model costs.
 
 ## Phase 1 — Trustworthy plans and source identity
 

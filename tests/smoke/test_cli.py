@@ -1,4 +1,5 @@
 import json
+
 import pytest
 
 from peeky import __version__
