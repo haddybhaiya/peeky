@@ -1,0 +1,210 @@
+{
+  "kit": "Peeky OpenFire MVP engineering kit",
+  "status": "partially implemented scaffold; do not claim final product completed",
+  "files": [
+    {
+      "path": ".env.example",
+      "sha256": "d565aa40adbbce0125c8d89b89199e2a7d48c10956a891a1244dc7ed954bdb43"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "38653fb6b54777b56c21444329172c3fa1ba65f3ccb7dad46221ae296bddff27"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "bff1a4207f8ab428f9f6e6f3b970e8c6299ed5e58d75eb2429443d35fcb9f7dd"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "fe4736853ac437e96e542ca36c15f69080041deeea0b1cd2acacf9fcb3c728a0"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "eca2aafde05d6c1bc62688eafdb3f6b4a574efcfe3946915776495f55878071b"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "8ee824a854073ccf6990c96b8986abaebbcab7e601fbe5fdbedc8ac0338a0741"
+    },
+    {
+      "path": "README.md",
+      "sha256": "12d710e2bcb918cd8058d4dde8338b2cddd64c3c466ed492c11da8791192a7a3"
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "f32010d8d959b14c5895bde2782c8369e593e2172555ad5e636d5a30f7d2849d"
+    },
+    {
+      "path": "docs/agent-benchmark.md",
+      "sha256": "5c765f710cef50908004a3b6d8cba83d62b805d3db4ff67ab08e92a120584159"
+    },
+    {
+      "path": "docs/architecture.md",
+      "sha256": "81e8d66004f507af05583ee46bd6de6b1ef55063f32eb7beda8b7b304d06053b"
+    },
+    {
+      "path": "docs/assumptions.md",
+      "sha256": "8bd65ec9b343a9401a264c888985c73f3292e1a7cce3f3d952a7b3256573c301"
+    },
+    {
+      "path": "docs/decisions.md",
+      "sha256": "9c77f8f4da37da8dc18246b017312d404144df14278aceb3902dc460ee6e2ab4"
+    },
+    {
+      "path": "docs/demo-plan.md",
+      "sha256": "4b4597754507eca68bf006b3ecdc2d0c0307497a1c777c63a6240e723a65b3a4"
+    },
+    {
+      "path": "docs/evaluation.md",
+      "sha256": "6661118661f7b6759e75207480856eea46eff49c552ee8c8cb18a9c820d39536"
+    },
+    {
+      "path": "docs/evidence-contract.md",
+      "sha256": "e1a53458965f53a45cf11faba89ba39a47fce95d0fa88b950010823acc0791e1"
+    },
+    {
+      "path": "docs/implementation-prompts.md",
+      "sha256": "7f4e8cc8f8c4347f7da5f33bb3b62e28fed9890deb524c12b8fe5c534e64532e"
+    },
+    {
+      "path": "docs/invariants.md",
+      "sha256": "48bba066edc1cc7410b0da187d7f182a3ede2dcdb38999078651964a280a9009"
+    },
+    {
+      "path": "docs/mvp-contract.md",
+      "sha256": "d919b5e3367049c92a2fb4d4f0d6f5cdff84162fcac5a84ca05f0086ebbd3725"
+    },
+    {
+      "path": "docs/open-models.md",
+      "sha256": "29df59c41c4910c011eb263979b9ac3bcdb5de95136104489c2270ac7d676dc1"
+    },
+    {
+      "path": "docs/phase.md",
+      "sha256": "534d7d844a46465bf5af67b5816d62970cbf18c29da33886438f9f8aa4472251"
+    },
+    {
+      "path": "docs/product-brief.md",
+      "sha256": "b5a70f0b8ca09a1a2eac90a016b07d54f92ca587a253d6c20be75993b4ad4f4b"
+    },
+    {
+      "path": "docs/requirements-traceability.md",
+      "sha256": "4c586b4bb8534cdbe292fd31e4476957d4ac172651fcef8d038f34929be6c9f2"
+    },
+    {
+      "path": "docs/research.md",
+      "sha256": "6f3a1509e758ec8476a907e192f551f2676e627fb36b24361bd8c17f89a70b0c"
+    },
+    {
+      "path": "docs/runner-security.md",
+      "sha256": "f5714e5b9777b16bdc4c984b5c0db191bcea962ffc6339cfcaee515cdd216bba"
+    },
+    {
+      "path": "docs/test-plan.md",
+      "sha256": "825aeed8a239bb3da0c0bdbefc608866dd03c8d9b91548092c2e175424e1c90d"
+    },
+    {
+      "path": "docs/threat-model.md",
+      "sha256": "728487be9abbcbfe968297719d6dc0f2744629c037af4c34d555792795e15e15"
+    },
+    {
+      "path": "docs/work_review.md",
+      "sha256": "2fc755292630f60afd97aecb6e7b2aa5bdda2c990a94db80b6f34f0b9bbc063d"
+    },
+    {
+      "path": "peeky.example.toml",
+      "sha256": "c9cc311bdb8d649316d2a4e0f02a78b69e385c3ca84c3dcd20fcf7b271a9ca90"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "41d0309a7255744e7347ace5e677b4808e9e360d6c10911dfcf1431846e20a0f"
+    },
+    {
+      "path": "scripts/check_docs.py",
+      "sha256": "09974415290224b4050da7410b8f6029f15c06cd6c1d614945862c770631dd04"
+    },
+    {
+      "path": "scripts/smoke_wheel.py",
+      "sha256": "4d90a6e9e875699e8bd6e098b2fbd02c56e4d8c1ae3b63d8f0c1119c355681eb"
+    },
+    {
+      "path": "src/peeky/__init__.py",
+      "sha256": "71ce0331fb72d3370eebbfdd6a1efd5badd58572ee2a1f580c93bb2e9e64512a"
+    },
+    {
+      "path": "src/peeky/__main__.py",
+      "sha256": "307299fda7b77d22c64cb51430ec75e5f59d78e9c948786afb3b2544fe45e4b7"
+    },
+    {
+      "path": "src/peeky/cli.py",
+      "sha256": "1dc1943dd7fd5fe5f578a5431a1d210029f3b79beb8d0a859dd2171808d33dc2"
+    },
+    {
+      "path": "src/peeky/evidence.py",
+      "sha256": "38faf01be2611a37f8c5f1e1756f0e3ef600b5496088643d0da18b08345e667d"
+    },
+    {
+      "path": "src/peeky/models.py",
+      "sha256": "699e9a68b0d9939b0bedc3bf513ba28577dd268be6cbc9d1d9f738444cac3432"
+    },
+    {
+      "path": "src/peeky/parser.py",
+      "sha256": "50901e4ccf6773d18b2fca263512ac10e894f6df905670f7ecceff4efcf2148a"
+    },
+    {
+      "path": "src/peeky/passport.py",
+      "sha256": "c35d7dbbbeefb8d857ac9e2cee0f21f3aa38de08bea304118797ba7e5728d9bd"
+    },
+    {
+      "path": "src/peeky/policy.py",
+      "sha256": "e5442a8a77f3aa0aafc3005462e1e25d202f7792fc82750e489dc876db248c36"
+    },
+    {
+      "path": "src/peeky/runner.py",
+      "sha256": "6bd870e5cfc53f47e991eeccf8c223401386b991a6979d0a4d2daa1ba12dfec9"
+    },
+    {
+      "path": "tests/fixtures/bad_repo/README.md",
+      "sha256": "fb64bee978ca0024dd602dfddc87e855c63187923eaddcae7fd78735ef1ad84e"
+    },
+    {
+      "path": "tests/fixtures/good_repo/README.md",
+      "sha256": "f1d40f0d1e15659e8a6945bbc34127c3af180b4c01668daca9b68ecf491f0c8b"
+    },
+    {
+      "path": "tests/fixtures/good_repo/smoke.py",
+      "sha256": "5eb1855e786d96c3ffdb7a2f1e538f45f3734ca2a56b54e72cdd24f28ac995a3"
+    },
+    {
+      "path": "tests/fixtures/no_optin_repo/README.md",
+      "sha256": "a32f317c090dbff4b3e1957fbdbcf9a8ac0ab8173b3253a286790321634f56bf"
+    },
+    {
+      "path": "tests/integration/test_docker.py",
+      "sha256": "06add6ee901fe61dac7a89ec528cca9588f804be346ac0b4c3c778a2ffea53a9"
+    },
+    {
+      "path": "tests/smoke/test_cli.py",
+      "sha256": "092ec51e26c3088a51a8a2904a390ba8c05998097d91c255f9c50a2b6eaf55c4"
+    },
+    {
+      "path": "tests/unit/test_parser.py",
+      "sha256": "3890334ccaa521527bdb44458cf9dec59d6855c85735c8185d3f4eb7a9c25b16"
+    },
+    {
+      "path": "tests/unit/test_passport.py",
+      "sha256": "c83220ced409d17721bf10748f3f984e15fa4e01676bb8dce2ea09dab06ef206"
+    },
+    {
+      "path": "tests/unit/test_policy.py",
+      "sha256": "5d0908c40ddaca7adcfc7944273190bc0e228aef54fe305061f43c806b071307"
+    },
+    {
+      "path": "tests/unit/test_verdict.py",
+      "sha256": "2658f519b518f47dcc879eb4a8e2ef2928fe13760e2b092f137cdb8c1e6114ef"
+    },
+    {
+      "path": "docs/repository-analysis.md",
+      "sha256": "ec7ebd1de7ed6d1c163f41a85821beee74fed6590d02fcdd0e23f924ef2d5c73"
+    }
+  ]
+}

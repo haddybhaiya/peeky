@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "peeky"
+version = "0.1.0.dev0"
+description = "Evidence-backed reproducibility checks and agent onboarding for Python OSS"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {file = "LICENSE"}
+authors = [{name = "Peeky contributors"}]
+dependencies = []
+
+[project.scripts]
+peeky = "peeky.cli:main"
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "ruff==0.16.10", "mypy==2.4.0", "build>=1.2,<2"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/peeky"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--strict-markers -ra"
+markers = [
+    "unit: no I/O except temporary files",
+    "smoke: package and CLI smoke",
+    "integration: genuine local integration",
+    "docker: requires a working Docker daemon; opt-in only",
+    "live: requires external model provider credentials; opt-in only",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+include = ["src/**/*.py", "tests/**/*.py", "scripts/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
