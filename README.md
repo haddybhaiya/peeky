@@ -94,3 +94,17 @@ python smoke.py
 - The agent benchmark must run on the same immutable revision, runner, model and budgets on both sides.
 - Existing AGENTS.md is never overwritten by this package.
 - This repo is public-ready only after secrets review, documentation review and all MVP phase gates pass.
+
+## Restricted agent onboarding trial (Phase 4)
+
+Passports now carry a local HMAC provenance certificate binding guidance, source, policy, plan, original audit bytes, run and image. Output must be `AGENTS.generated.md` and is never overwritten. This is candidate guidance, not public attestation.
+
+After a successful audit, opt in explicitly:
+
+```powershell
+uv run --locked peeky trial tests/fixtures/good_repo --evidence PATH_TO_AUDIT.json --expected-command "python smoke.py" --expected-stdout "HELLO_FROM_GOOD_FIXTURE" --approve --model-consent --env-file .env
+```
+
+Use the existing ignored Gemma BYOK configuration. Each arm gets a fresh conversation and source capture with the same model, image, task and budgets; only passport guidance differs. Native tools can read bounded captured files or request the approved command in fresh offline Docker. The independent controller judges execution. No installation, host target execution or GitHub writes.
+
+Actual local report: baseline **0/2 PASS**, passport **1/2 PASS**, three provider HTTP 500 errors, **0/2 comparable pairs**. All failures are retained; no improvement estimate is claimed. See [the Phase 4 protocol and evidence paths](docs/phase4-onboarding.md). This is an implemented harness with an inconclusive live comparison, not completion of the whole MVP.

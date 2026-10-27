@@ -8,8 +8,8 @@
 | FS-004 | runner.py, fixtures, validate_phase2.py | T-009..T-017 | local real Docker gate and observed remote core/sandbox jobs passed (Actions 40493116591) |
 | FS-005 | providers/openai_compatible.py, cli.py | T-018,T-019,T-023 | BYOK Gemma, strict schema and genuine retained-response T-023 passed; Google frame normalization and preserved request provenance documented |
 | FS-006 | repair.py, runner.py | T-020..T-025 | strict README diff/approval gates and real fresh Docker tests passed; genuine Gemma proposal explicitly approved by owner, then matching fresh recheck VERIFIED |
-| FS-007 | passport.py, sources.py, evidence.py, provenance.py | T-008,T-015,T-016,T-026..T-028 | source/policy/runtime/HMAC consistency verified locally; clean repair/retest and full Phase 4 gate pending |
-| FS-008 | benchmark.py (planned) | T-029..T-032 | not implemented |
+| FS-007 | passport.py, sources.py, evidence.py, provenance.py | T-008,T-015,T-016,T-026..T-028 | exact source/policy/plan/guidance/evidence bytes/run/image/container-state binding tested; local HMAC only |
+| FS-008 | benchmark.py, cli.py, validate_phase4.py | T-029..T-032 | native tools and fresh Docker protocol implemented; genuine paired attempts retained; comparative live result INCONCLUSIVE (0/2 comparable pairs) |
 | FS-009 | reports.py (planned), evidence.py | T-033 | partial JSON |
 | FS-010 | docs/, scripts/ | T-034..T-037 | partial |
 
@@ -69,3 +69,19 @@ Final retry validation: 169 deterministic tests passed, 1 live deselected, 0 ski
 
 
 T-014 follow-up: `test_T014_delayed_oom_flag_preserves_both_state_observations`, `test_T014_unconfirmed_137_has_bounded_probes_even_if_clock_stalls`, `test_T014_state_settle_deadline_prevents_more_probes` and the four `test_T014_other_states_are_not_polled` cases exercise state ordering/bounds. The original real OOM test now explicitly requires Docker's OOM flag. `test_T014_unconfirmed_137_is_not_claimed_as_oom_or_target_failure` runs real explicit exits and independently verified child SIGKILL propagation under the same sandbox, preserving INCONCLUSIVE without claiming OOM. Run 40502294999 failed before this local correction; a corrected remote CI result is pending.
+
+## Phase 4 acceptance mapping
+
+Tests in `tests/unit/test_benchmark.py`, plus `tests/integration/test_benchmark_docker.py`:
+
+| ID | Concrete behavior and evidence |
+|---|---|
+| T-026 | `test_T026_passport_binds_exact_evidence_and_image`, `test_T026_incomplete_runtime_provenance_is_denied`; existing passport missing/non-PASS/inconsistent evidence tests remain required |
+| T-027 | `test_T027_guidance_tampering_and_source_change_invalidate_certificate`; existing source/commit-change passport cases |
+| T-028 | `test_T028_existing_agent_files_never_overwritten`; exact generated basename and exclusive creation |
+| T-029 | `test_T029_text_only_success_claim_never_executes_or_passes`, permission/duplicate-key denials; integration `test_T029_T030_T032_native_tool_pair_has_independent_fresh_runtime_outcomes`; actual live native `run_smoke` and real marker PASS retained for one passport arm |
+| T-030 | `test_T030_condition_drift_prevents_comparison` covers source, image, model, task and budget drift; real integration checks equal controls and distinct fresh containers |
+| T-031 | `test_T031_native_tool_loop_is_bounded_and_uses_real_reads`; negative/error/usage/time reporting in the T-032 cases and all actual live records |
+| T-032 | `test_T032_negatives_and_missing_provider_stay_in_denominators`, `test_T032_study_retains_all_pairs_and_authenticates_report`; Docker integration independently judges both arms against the same command/marker |
+
+Synthetic provider responses in integration exercise the actual runner, not remote model ability. The live report retains 2 pairs / 4 attempts: baseline 0/2, passport 1/2; three provider errors; 0 comparable pairs. Protocol controls match but live comparative performance remains INCONCLUSIVE. See `phase4-onboarding.md`. Corrected Phase 3 CI runs 40504283043 and 40504277107 succeeded for 05e0876 before this phase; historical pending-CI entries above describe the earlier state.
