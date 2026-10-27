@@ -43,7 +43,7 @@ Repository snapshot + README parser ----> Reviewable step plan
 - `providers/openai_compatible.py`: one opt-in BYOK Gemma Chat Completions adapter, bounded redacted context, strict proposals and model/version/usage/cost provenance; no tools/retries/verdict authority.
 - `repair.py`: authenticated baseline, frozen operator oracle, exact README command-line diff, digest-bound human approval, persistent attempt claims and fresh baseline/candidate Docker comparison. Derived source has a genuine temporary Git revision; target files/index are never patched.
 - `benchmark.py`: restricted native-tool onboarding harness, fresh remote conversations, fixed source/model/image/task/budgets, independent Docker oracle, authenticated traces and denominator-aware paired/study Markdown. The trusted dispatcher remains in the controller process; target code runs only in fresh restricted Docker containers. See `phase4-onboarding.md`.
-- **To implement:** `reports.py` general release exports (Phase 5). Genuine provider trials remain separate from mocked-model Docker protocol checks.
+- `reports.py`: bounded authenticated audit/pair/study summaries, explicit incomplete/unknown states, exclusive JSON/Markdown export and byte hash. No target execution, model call, source refresh or transitive path following. Genuine provider trials remain separate from mocked-model Docker protocol checks.
 
 ## State machine
 

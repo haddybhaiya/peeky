@@ -28,7 +28,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "5433bae3122783b69926c766a806aa9152058efbe626ffb3a3e264dbe11a94d1"
+      "sha256": "44e70635c8bd3478734273b0c4ff364e846a79148954196a31c30209ac0be693"
     },
     {
       "path": "SECURITY.md",
@@ -40,19 +40,19 @@
     },
     {
       "path": "docs/architecture.md",
-      "sha256": "44026c02b392cd07a8c4cb8d1637ca61a1cf4ffb5946755ee5227e23c3abb30b"
+      "sha256": "eeda50604ed9638e8d9bc37a65e1c0656c155a790f97e9209b1a3e7798b82545"
     },
     {
       "path": "docs/assumptions.md",
-      "sha256": "a190f64c4314c81c907e0eba54729576b9fade550bebb1c55f55fbf92400b424"
+      "sha256": "0890d601806d422b9b4db9252b9583f4e69cfa83c1fb3181e6e370cee05cf2bc"
     },
     {
       "path": "docs/decisions.md",
-      "sha256": "d658c454d1187455c20069c55bd3285a625bc048041cbd841eaada1ad5f7cee4"
+      "sha256": "224271d158bee8b9081b64241e2e67fc089206b2c7e0786e452cec5ecc8ee25a"
     },
     {
       "path": "docs/demo-plan.md",
-      "sha256": "2d644f74cc0699ac61b9b4fb085b81caabee91357c75f370600e24469627cfa9"
+      "sha256": "0164517d6d67a856106fb7c2029121276aba92240d783542d48a17d75e737613"
     },
     {
       "path": "docs/evaluation.md",
@@ -72,11 +72,11 @@
     },
     {
       "path": "docs/open-models.md",
-      "sha256": "550638087b40873ff8e6898f98efe299853d206575ea731fb3438f63e23773ce"
+      "sha256": "46bb8dc85cfd8d9809bddc3f54cc3009724c669b3ed7e46a74f003c7ac12da59"
     },
     {
       "path": "docs/phase.md",
-      "sha256": "4112cd6c46119f1e4dc5d7f5b27af1df377edf1c75348b83905be89ebd95b583"
+      "sha256": "02a28fd6adf0465aa4c781578c3136ae24e25dc2bbaecbdeb46b8480b372fbd8"
     },
     {
       "path": "docs/phase2-runner.md",
@@ -91,6 +91,10 @@
       "sha256": "e33ceda86b43415f78693b7aa0e16fd7e18ee0cbca9a52b7890f7244da472d2f"
     },
     {
+      "path": "docs/phase5-review.md",
+      "sha256": "8024fc08c3a5317f4bb9c88a8aeb6e8b57c4e289298be796e1d7141baab21bcd"
+    },
+    {
       "path": "docs/product-brief.md",
       "sha256": "3b0ffebe82f047456621e0e7a76369557d4c592bc556d2d044d30b7b3dfeba51"
     },
@@ -100,7 +104,7 @@
     },
     {
       "path": "docs/requirements-traceability.md",
-      "sha256": "6c54c4e9903435bcef7399ed134bf779e4839cbd943e8373f39846bfe3ffccd7"
+      "sha256": "2e0ac6ce90794d4fb1d9836e9632f7378642b7b2bc6d847782f4c6d0c9689a29"
     },
     {
       "path": "docs/research.md",
@@ -116,7 +120,7 @@
     },
     {
       "path": "docs/test-plan.md",
-      "sha256": "e9ff6ef4853a3057375c2f4c4bfa0aad6c19f7d4471215a9b1f16e2ca606481e"
+      "sha256": "5cf6455fa5aebf42a6ba294dfaf5f6c31057cd04e3737d357be2bf34d4a7e1ac"
     },
     {
       "path": "docs/threat-model.md",
@@ -124,7 +128,7 @@
     },
     {
       "path": "docs/work_review.md",
-      "sha256": "844403db0f915294ce68c3ebfb7e5141a8f170ccf4b6d6f52fc1b83a9c52f14a"
+      "sha256": "a2672574c1f37475a12c6bb1f9e1a150a7720714ff382c2676a95e02d5b10ad1"
     },
     {
       "path": "peeky.example.toml",
@@ -136,7 +140,7 @@
     },
     {
       "path": "scripts/check_docs.py",
-      "sha256": "a9fb7c66e00392e106d8f0b4d4236815241e16db7689dce8de6d26ec1017de31"
+      "sha256": "4a750836abb88a4bbb54a3eb4eeeb873d2b02262eb26118cd48078b502b044a2"
     },
     {
       "path": "scripts/smoke_wheel.py",
@@ -168,7 +172,7 @@
     },
     {
       "path": "src/peeky/cli.py",
-      "sha256": "47c4d8499ea66c20b6cd378708ffbc64da3f2edadfe1025185295f54159d9b8f"
+      "sha256": "9e204a1f32125d9100ee9e9e448d9c13f284f5a991c4abec7a19ebfdb1cf097e"
     },
     {
       "path": "src/peeky/domain.py",
@@ -221,6 +225,10 @@
     {
       "path": "src/peeky/repair.py",
       "sha256": "64486861f40fe1d0ed7690d0c67621b71d03c45946d7f03a58b5accdb6b873b7"
+    },
+    {
+      "path": "src/peeky/reports.py",
+      "sha256": "970770ee6081681c84873724a7faed0376c0ec25032c37d115f886bca3a655ca"
     },
     {
       "path": "src/peeky/runner.py",
@@ -321,6 +329,10 @@
     {
       "path": "tests/unit/test_repair.py",
       "sha256": "4e5929f75c1c600520198e6a18e90c0ac4d79b9033dc8d93e184077955920b52"
+    },
+    {
+      "path": "tests/unit/test_reports.py",
+      "sha256": "aea4e90d138c841cb5f7c556e3f71245f2400088c914eca89c79adf506e2276b"
     },
     {
       "path": "tests/unit/test_runner.py",

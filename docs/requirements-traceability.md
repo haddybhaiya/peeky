@@ -10,8 +10,8 @@
 | FS-006 | repair.py, runner.py | T-020..T-025 | strict README diff/approval gates and real fresh Docker tests passed; genuine Gemma proposal explicitly approved by owner, then matching fresh recheck VERIFIED |
 | FS-007 | passport.py, sources.py, evidence.py, provenance.py | T-008,T-015,T-016,T-026..T-028 | exact source/policy/plan/guidance/evidence bytes/run/image/container-state binding tested; local HMAC only |
 | FS-008 | benchmark.py, cli.py, validate_phase4.py | T-029..T-032 | native tools and fresh Docker protocol implemented; genuine paired attempts retained; comparative live result INCONCLUSIVE (0/2 comparable pairs) |
-| FS-009 | reports.py (planned), evidence.py | T-033 | partial JSON |
-| FS-010 | docs/, scripts/ | T-034..T-037 | partial |
+| FS-009 | reports.py, evidence.py, cli.py | T-033 | authenticated JSON/Markdown summary implemented; incomplete PASS downgraded, unknowns and negative denominators retained |
+| FS-010 | docs/, scripts/ | T-034..T-037 | local package/setup/review and caption materials prepared; actual video and external eligibility remain OPEN |
 
 A requirement is not VERIFIED because code exists; record exact test outcome in work review.
 
@@ -85,3 +85,13 @@ Tests in `tests/unit/test_benchmark.py`, plus `tests/integration/test_benchmark_
 | T-032 | `test_T032_negatives_and_missing_provider_stay_in_denominators`, `test_T032_study_retains_all_pairs_and_authenticates_report`; Docker integration independently judges both arms against the same command/marker |
 
 Synthetic provider responses in integration exercise the actual runner, not remote model ability. The live report retains 2 pairs / 4 attempts: baseline 0/2, passport 1/2; three provider errors; 0 comparable pairs. Protocol controls match but live comparative performance remains INCONCLUSIVE. See `phase4-onboarding.md`. Corrected Phase 3 CI runs 40504283043 and 40504277107 succeeded for 05e0876 before this phase; historical pending-CI entries above describe the earlier state.
+
+## Phase 5 acceptance mapping
+
+- T-033: `test_reports.py` exercises incomplete signed PASS downgrade, exact Markdown bytes hash, export overwrite refusal, tamper rejection before output and unsupported-schema rejection. Actual CLI export preserves fresh PASS/FAIL/INCONCLUSIVE audits and all historical study negatives. Summary-only, no new verification.
+- T-034: `scripts/smoke_wheel.py` installs the built wheel without index/dependencies into a clean venv and runs module/console/inspect smoke outside the checkout.
+- T-035: manual `.github/workflows/ci.yml` inspection confirms deterministic gates contain no secrets interpolation, `.env` loading or live model invocation. Remote Phase 4/5 execution not claimed.
+- T-036: `scripts/check_docs.py`, source/package byte comparison and refreshed public manifest; README scope/status, setup, architecture and model attribution reviewed.
+- T-037: actual-value captions, static retained-evidence display and original records prepared. **Actual 90?120 second screen recording and human video review NOT DONE**; no simulated artifact substitutes for that gate.
+
+The current organizer page also requires Alan + open models, conflicting with earlier optional-Alan Town Hall notes. Google-hosted Gemma use is evidenced; Alan use is not. Eligibility needs organizer clarification; full phase is not VERIFIED.

@@ -27,3 +27,7 @@ Official sources: [model card](https://ai.google.dev/gemma/docs/core/model_card_
 No secrets committed; pass endpoint/model/key via environment; opt-in before remote repo content leaves machine; bound 12k input characters; redact tokens and personal data; record checkpoint/provider and costs; mock deterministic tests, one genuine live test only if enabled. Model output is untrusted, strict schema, patch lint, independent verify.
 
 Sources: https://github.com/NandhaKishorM/laya ; https://huggingface.co/convaiinnovations/laya ; https://github.com/open-orcha/orcha ; https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct ; https://luma.com/2k6cxr0n
+
+## Final attribution review (2026-10-27)
+
+The current Google model card identifies Google DeepMind's Gemma 4 as open-weight, Apache 2.0, with coding and native function-calling capabilities; the hosted Gemma API documentation lists `gemma-4-31b-it`. This project uses that managed API, not local inference, a dedicated coding-only checkpoint, or an attested immutable hosted weights digest. Sources: [Google model card](https://ai.google.dev/gemma/docs/core/model_card_4), [hosted API](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api). Current organizer rules at [OpenFire](https://luma.com/2k6cxr0n) say Alan + open models; earlier optional-Alan notes are historical and require clarification.

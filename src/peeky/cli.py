@@ -67,6 +67,9 @@ def build_parser() -> argparse.ArgumentParser:
     trial.add_argument("--model-consent", action="store_true")
     trial.add_argument("--env-file", type=Path)
     trial.add_argument("--output", type=Path, default=Path(".peeky/trials"))
+    summary = commands.add_parser("report", help="Export an authenticated evidence summary")
+    summary.add_argument("--evidence", type=Path, action="append", required=True)
+    summary.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -74,6 +77,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "report":
+            from .reports import export_summary
+
+            path = export_summary(args.evidence, args.output)
+            print(f"Summary evidence: {path}")
+            print(f"Readable report: {args.output / 'summary.md'}")
+            print("SUMMARY_ONLY: no new execution or verification")
+            return 0
         if args.command == "trial":
             if not args.approve or not args.model_consent:
                 print("Trial requires --approve and --model-consent.", file=sys.stderr)
