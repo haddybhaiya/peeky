@@ -8,9 +8,11 @@ Annotated fences only; max 12 commands; one command per line; simple `shlex` inv
 
 These controls are **not equivalent to secure execution of arbitrary hostile repos**. A malicious Python script still executes code inside the container. Docker shares a kernel with the host and may have exploitable vulnerabilities. Execute unknown code only on disposable infrastructure.
 
+Phase 1 adds committed, bounded source exports to the CLI path: raw Git object identities and index/worktree bytes are checked, source symlink/submodule/reparse paths are denied, and known credential paths/Git metadata are excluded. Inspect never invokes Docker; audit gives Docker a verified temporary export instead of the live input tree. Policy limits and run/plan identities are recorded. Git plumbing is trusted host tooling; target commands, imports, hooks and filters are not executed on the host. See `source-capture.md`. The low-level runner still accepts a Path for its internal fixture API; Phase 2 must enforce the full runner boundary and validate real container behavior.
+
 ## Must implement before final MVP
 
-1. Immutable source capture (exclude .git secrets, symlinks, devices, submodules; verify git SHA and dirty state); no Docker mounting arbitrary host paths.
+1. Phase 1 completed the CLI source-capture prerequisite (verified Git identities, selected-scope cleanliness, regular bounded exports). Before the final MVP, validate the complete runner boundary on real Docker, including filesystem race assumptions and credential exclusion; do not treat filename checks as a full secret scanner.
 2. Verify image digest and fail closed if chosen digest unavailable. CI must pin actual digest, not mutable tag.
 3. Redaction of tokens, suspicious URL query strings and environment values from all traces; discard raw secrets at collection boundary.
 4. Distinguish infrastructure failures (image missing, daemon unreachable) from target FAIL by inspecting Docker errors, not merely return code.

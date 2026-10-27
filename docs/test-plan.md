@@ -1,6 +1,6 @@
 # Test plan and exact acceptance scenarios
 
-**Levels:** unit (pure), smoke (CLI/package), integration (real Docker), live (opt-in model), e2e (full clean-run and agent benchmark). Real integration must not be faked with monkeypatching. CI currently covers `unit`, `smoke`, Docker fixture tests; `live` explicitly excluded.
+**Levels:** unit (controller/data checks with temporary files and synthetic Git repositories), smoke (CLI/package), integration (real independent-process Git capture or Docker), live (opt-in model), e2e (full clean-run and agent benchmark). Real integration must not be faked with monkeypatching. CI covers unit/smoke, `test_source_capture.py` and a separate Docker job; live tests remain opt-in. Git fixture commits are synthetic temporary repositories, never the workspace repository.
 
 | ID | Test/claim | Phase | Evidence |
 |---|---|---|---|
@@ -44,10 +44,10 @@
 
 ## Fixed fixtures
 
-- `good_repo` passes `python -m compileall -q .` and a toy smoke script.
+- `good_repo` declares one `python smoke.py` command that prints `HELLO_FROM_GOOD_FIXTURE`; target execution requires the separate real Docker gate.
 - `bad_repo` has deliberately wrong module, must FAIL.
 - `no_optin_repo` must produce no steps, INCONCLUSIVE; never auto-infer commands.
 
 ## CI gates and counts
 
-Core job: `uv sync --locked`; `ruff check`, `ruff format --check`, `mypy`, tests excluding docker/live, public docs checker, wheel build and isolated installed-module/console smoke. Docker job: locked dependency sync, explicit image pull and `pytest -m docker`. No CI key. Phase 0 passed locally on Python 3.13.7; the owner deferred both local Docker cases until the daemon is running. Record tests run/skipped/deferred in work review. **Coverage percentages or passed tests cannot be claimed from this document alone.**
+Core job: `uv sync --locked`; `ruff check`, `ruff format --check`, `mypy`, `pytest tests/unit tests/smoke tests/integration/test_source_capture.py` excluding docker/live, public docs checker, wheel build and isolated installed-module/console smoke. Docker job: locked dependency sync, explicit image pull and `pytest -m docker`. No CI key. Phase 1's local combined gate completed 85 tests with 0 skips on Python 3.13.7; both Docker cases remain deferred. T-007 uses a capability-boundary stub and checks no target execution plus actual BLOCKED evidence; it is not a real Docker pass. The synthetic PASS result used for passport schema units is explicitly not execution evidence. See the per-ID requirements mapping and work review. **Coverage percentages or passed tests cannot be claimed from this document alone.**
