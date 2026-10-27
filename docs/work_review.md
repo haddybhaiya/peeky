@@ -124,3 +124,34 @@
 **Phase gate:** Phase 1 VERIFIED locally for FS-001/002 pre-execution contracts and T-001..T-008, plus real Git integration and package/docs gates. This is not a real Docker/product PASS and does not promote Phase 2.
 
 **Next task:** Phase 2 runner boundary and evidence hardening, followed by genuine Docker T-009..T-017 once the daemon is available. Do not begin models/repair or release until prerequisite gates pass.
+
+## 2026-10-27 — Phase 2 local Docker gate completed
+
+**Changed:** the runner accepts only controller-captured immutable snapshots and one reviewed command. The official Python image is pinned to `python@sha256:12316debbfb86890f6b2d825820612741ba527ad5a44e3902759141d572bfe8f`; audit never pulls images or installs dependencies. Effective container configuration is checked before start, including read-only source/root filesystem, no network/capabilities, non-root identity, fixed environment and CPU/memory/PID limits. Bounded streaming, timeout/OOM classification, ownership-checked cleanup and redacted original transcripts distinguish target failure from infrastructure uncertainty. Schema 1.2 binds runtime evidence to source/policy/plan identities, authenticates records with a per-user key outside repositories and writes records atomically without replacing existing evidence. Host tool lookup excludes the target repository and current directory. No models or release functionality was added.
+
+**Environment:** Windows Python 3.13.7, uv 0.12.23, pytest 9.1.1, Ruff 0.16.10, mypy 2.4.0; Docker Engine 29.1.3, Linux/amd64 containers. Base HEAD `f5ac0c8dd7f29c7f84b6c7c8c6ea555fa26bb1ae`. The official image was prefetched separately, then all runner checks used the cached exact digest. No workspace staging, commits, remote writes or target host execution occurred.
+
+| Completed command/check | Observed result |
+|---|---|
+| `uv run --locked pytest -m 'not live' -q` | **118 passed in 148.69s; 0 skipped**, including 103 controller/source cases and 15 real Docker/infrastructure cases |
+| Dedicated Docker integration run | 15 passed in 69.66s; T-009..T-017 cover good/bad/reserved exits, missing image/daemon/executable, timeout, isolation/resource limits, OOM, bounded logs/redaction and no-op refusal |
+| `.venv\Scripts\ruff.exe check .` | All checks passed |
+| `.venv\Scripts\ruff.exe format --check .` | 33 files already formatted |
+| `.venv\Scripts\mypy.exe src tests` | Success: 30 source files |
+| `.venv\Scripts\python.exe scripts/check_docs.py` | 16 required public files checked |
+| `uv sync --locked --offline` | 16 packages resolved/checked; no new dependencies |
+| `uv build --offline --wheel` | Built `dist/peeky-0.1.0.dev0-py3-none-any.whl` for local validation |
+| `uv run --locked python scripts/smoke_wheel.py` | Passed clean network-free wheel installation, module/console versions and console inspect outside the checkout |
+| `uv run --locked python scripts/validate_phase2.py` | Actual good fixture PASS, bad fixture FAIL and no-opt-in fixture INCONCLUSIVE; authenticated evidence retained |
+
+**Retained evidence:** `.peeky/phase2-validation/summary.json` points to the final records: good `2615b8f276f34872a7755d1bbbab9793`, bad `fcc556b7bd634048b5ec971dffc690a1`, no-opt-in `763546d9c60a4b4981e48107dc860503`. Original bounded transcripts are retained after redaction, with hashes and runtime configuration in each record. Earlier development records remain preserved and are not the final gate evidence. The convenience summary is not authenticated; the individual records are authoritative.
+
+**Validation corrections:** sandbox access initially denied Docker/uv/pytest temporary state; approved execution outside that sandbox resolved access without a host target fallback. Intermediate type/test defects were corrected before the final complete gate. Final boundary review moved the authentication key outside target repositories, excluded repository-local host tools, and rejected unknown/duplicate effective environment entries. No assertion was relaxed to produce the reported gate.
+
+**Docs updated:** Phase 2 runner contract, architecture, source capture, evidence contract, runner security, assumptions, ADR-011, requirements T-009..T-017, test plan, phase tracker, repository analysis, contributor/security guidance and public manifest. CI now prefetches the exact digest separately and runs the Docker gate and fixture validator; that remote workflow has not been executed by this task.
+
+**Known limits:** Docker shares its host kernel; local HMAC is not public attestation or protection against a compromised host owner. Redaction is bounded pattern matching, not a complete secret detector. One command and the reviewed preinstalled image are supported; dependency prefetch, crash-recovery journaling, models/repair and release remain deferred. Atomic evidence storage requires a hard-link-capable filesystem. Python 3.12/Linux controller and remote CI results are pending.
+
+**Phase gate:** Phase 2 `LOCAL_GATE_PASSED`; all requested local gates passed with real Docker evidence. Remote CI remains pending, so no global CI verification is claimed.
+
+**Next task:** obtain remote CI confirmation through the owner's normal review workflow, then begin Phase 3 only with authorization. Nothing staged, committed or pushed by this task.
