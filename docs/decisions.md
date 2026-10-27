@@ -59,3 +59,10 @@ No autopublish, remote repo mass scans, auto PR merge, hosted agent, or subscrip
 
 
 **ADR-012 update after owner-authorized retries:** missing free-tier usage/cost is nonfatal metadata, recorded as unknown. Use the full 45-second response wait; retain error diagnostics and use only explicitly authorized bounded attempts. Google may frame a completion with a flagged thought prefix; discard only that delimited provider frame, then enforce the same strict JSON/schema/path/command rules. Request minimal thinking going forward. Retained-response validation may link immutable original evidence and keep request identity/latency/usage unchanged without inventing another network call. This resolved the real-response parser blocker; T-023 and the human-approved fresh Docker comparison then passed.
+
+
+## ADR-013: settle OOM metadata and preserve ambiguous termination
+
+**Chosen:** refresh only exited code-137 states whose OOM flag is explicitly false, for at most five extra reads under a one-second settling window, using the existing per-read Docker metadata timeout. Preserve observations and identify runner 2.1. Confirmed OOM is MEMORY_LIMIT; unconfirmed 137 is TERMINATION_UNCERTAIN, both INCONCLUSIVE. Normal target nonzero codes, including 125/126/127, retain FAIL classification. No change to target execution budgets, image, mounts, network or policy identity.
+
+**Why:** CI run 40502294999 failed T-014 after the first State observation while the original fixture passed locally. Moby handles exit and OOM events separately. A bounded refresh handles that possible ordering; code 137 alone cannot distinguish an explicit exit, propagated SIGKILL or actual OOM. Do not relabel all 137 outcomes as MEMORY_LIMIT or weaken the real OOM assertion. Additional strict real and metadata-history regressions verify the behavior. Remote success must be observed after publication, not assumed from local checks.
