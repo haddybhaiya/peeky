@@ -75,3 +75,7 @@ Final Phase 4 deterministic gate: **201 passed, 1 live deselected, 0 skips in 24
 ## Phase 5 local review
 
 T-033 is covered by `tests/unit/test_reports.py`; T-034..T-036 use installed-wheel smoke, CI inspection, docs and manifest/package checks. T-037 requires the actual video; prepared captions/HTML are not a recording. Fresh good/bad/no-opt-in fixture audit evidence is retained under `.peeky/phase5-validation/fixtures`. Summary JSON/Markdown and private evidence archive are under that same root. Final observed gate counts are in work review. No model calls are part of Phase 5 validation.
+
+## Owner-confirmed delivery completion
+
+The owner confirms the actual demo video and OpenFire submission are complete. T-037 delivery status is updated from pending recording to owner-reported completion; the controller has not independently checked final recording duration/content or a submission receipt. Existing local technical gate remains 204 passed, 1 live deselected, 0 skips. No new model run, Docker run, benchmark improvement, second-machine reproduction or remote CI result is inferred from this documentation update.

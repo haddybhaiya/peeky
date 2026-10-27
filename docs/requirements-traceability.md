@@ -11,7 +11,7 @@
 | FS-007 | passport.py, sources.py, evidence.py, provenance.py | T-008,T-015,T-016,T-026..T-028 | exact source/policy/plan/guidance/evidence bytes/run/image/container-state binding tested; local HMAC only |
 | FS-008 | benchmark.py, cli.py, validate_phase4.py | T-029..T-032 | native tools and fresh Docker protocol implemented; genuine paired attempts retained; comparative live result INCONCLUSIVE (0/2 comparable pairs) |
 | FS-009 | reports.py, evidence.py, cli.py | T-033 | authenticated JSON/Markdown summary implemented; incomplete PASS downgraded, unknowns and negative denominators retained |
-| FS-010 | docs/, scripts/ | T-034..T-037 | local package/setup/review and caption materials prepared; actual video and external eligibility remain OPEN |
+| FS-010 | docs/, scripts/ | T-034..T-037 | local package/setup/review passed; demo video and submission completed per owner confirmation; final recording not independently inspected |
 
 A requirement is not VERIFIED because code exists; record exact test outcome in work review.
 
@@ -92,6 +92,6 @@ Synthetic provider responses in integration exercise the actual runner, not remo
 - T-034: `scripts/smoke_wheel.py` installs the built wheel without index/dependencies into a clean venv and runs module/console/inspect smoke outside the checkout.
 - T-035: manual `.github/workflows/ci.yml` inspection confirms deterministic gates contain no secrets interpolation, `.env` loading or live model invocation. Remote Phase 4/5 execution not claimed.
 - T-036: `scripts/check_docs.py`, source/package byte comparison and refreshed public manifest; README scope/status, setup, architecture and model attribution reviewed.
-- T-037: actual-value captions, static retained-evidence display and original records prepared. **Actual 90?120 second screen recording and human video review NOT DONE**; no simulated artifact substitutes for that gate.
+- T-037: actual-value captions, static retained-evidence display and original records prepared. **Actual demo video and submission completed, confirmed by the owner**; final duration/content not independently inspected. Prepared HTML/captions are not substituted for the actual video.
 
-The current organizer page also requires Alan + open models, conflicting with earlier optional-Alan Town Hall notes. Google-hosted Gemma use is evidenced; Alan use is not. Eligibility needs organizer clarification; full phase is not VERIFIED.
+The current organizer page also requires Alan + open models, conflicting with earlier optional-Alan Town Hall notes. Google-hosted Gemma use is evidenced; Alan use is not. This was a preparation-time eligibility question. The owner subsequently completed submission. Phase 5 delivery is complete per that confirmation; organizer acceptance is not inferred.
