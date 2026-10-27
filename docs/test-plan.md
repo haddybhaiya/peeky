@@ -65,3 +65,13 @@ T-023 subsequently passed against the genuine Gemma retained response and its au
 The observed remote sandbox run failed 1 case (16 passed, 1 deselected); core passed. The original OOM case passed locally before edits, establishing a cross-environment/intermittent observation problem rather than a deterministic local failure. Add strict delayed-OOM/deadline/bounded-state unit histories and two real non-OOM 137 cases. The original memory-limit assertion is not relaxed; it now also requires OOMKilled=true and prints full redacted result JSON on failure. Initial focused regression run found Linux PID 1 ignores a self-sent SIGKILL; the corrected fixture verifies SIGKILL on a child and propagates its actual wait status. Focused runner/Docker gate then passed 29 cases in 72.37s; a subsequent deadline unit is included in the final full gate. No host target execution, untrusted installation or remote CI success is inferred.
 
 Final local T-014 correction gate: 178 passed, 1 live deselected, 0 skipped in 172.88s; lint/type/docs and installed-wheel smoke passed. Corrected remote CI is awaiting publication/rerun, not claimed green.
+
+## Phase 4 acceptance gates
+
+T-026..T-032 map to concrete passport, native-tool, controls, real paired Docker and report-integrity tests in `requirements-traceability.md`. The Docker pair uses explicitly mocked provider responses but real independent containers and the same frozen oracle. Genuine live attempts are separately retained: two pairs/four attempts, three HTTP 500 responses, one native-tool Docker PASS, zero comparable pairs. Missing provider usage/billing remains unknown. No key is required for mocks. Phase 3 corrected remote CI runs 40504283043 and 40504277107 succeeded before this phase; no Phase 4 remote CI success is claimed. Final deterministic counts are recorded in work review; actual live comparative gate remains INCONCLUSIVE.
+
+Final Phase 4 deterministic gate: **201 passed, 1 live deselected, 0 skips in 243.09s**. Ruff lint/format, mypy (41 files), required docs (18), installed wheel, public export and 84 manifest hashes passed. This does not promote the separate live comparative result: 0/2 comparable pairs, INCONCLUSIVE.
+
+## Phase 5 local review
+
+T-033 is covered by `tests/unit/test_reports.py`; T-034..T-036 use installed-wheel smoke, CI inspection, docs and manifest/package checks. T-037 requires the actual video; prepared captions/HTML are not a recording. Fresh good/bad/no-opt-in fixture audit evidence is retained under `.peeky/phase5-validation/fixtures`. Summary JSON/Markdown and private evidence archive are under that same root. Final observed gate counts are in work review. No model calls are part of Phase 5 validation.

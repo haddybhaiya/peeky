@@ -103,8 +103,16 @@ def evidence_file(repo: Path, tmp_path: Path) -> Path:
                 "source_sha256": source.source_sha256,
                 "policy_sha256": DEFAULT_POLICY.sha256,
                 "image_digest": DEFAULT_IMAGE,
-                "image_id": "synthetic-image-not-real-execution",
-                "container_id": "synthetic-container",
+                "image_id": "sha256:" + "a" * 64,  # Synthetic shape, never execution proof.
+                "container_id": "b" * 64,
+                "command_sha256": hashlib.sha256(s.command.encode()).hexdigest(),
+                "container_state": {
+                    "Status": "exited",
+                    "Running": False,
+                    "OOMKilled": False,
+                    "ExitCode": 0,
+                    "Error": "",
+                },
                 "target_started": True,
                 "logs_complete": True,
                 "cleanup_verified": True,

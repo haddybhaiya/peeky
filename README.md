@@ -2,7 +2,7 @@
 
 **Product hypothesis:** A repository should be demonstrably installable for a first-time human and bootstrappable for a fresh coding agent, not merely documented as such.
 
-**Status:** Development MVP, **not a completed OpenFire submission**. `inspect`, `doctor`, `audit` (restricted offline Docker checks), `passport` and Phase 3's opt-in BYOK **Gemma** proposal/approved README recheck flow are implemented. The genuine Gemma response, exact human approval and fresh original/candidate Docker repair gate passed locally; remote Phase 3 CI remains pending. Exact evidence and earlier failures are in [work review](docs/work_review.md). Agent cold-start A/B evaluation remains planned. Never claim the complete MVP until [acceptance gates](docs/mvp-contract.md) pass.
+**Status:** Development MVP with restricted Docker audits, opt-in BYOK Gemma README repair, authenticated candidate passports and a native-tool onboarding harness. Phase 3's genuine proposal and human-approved fresh Docker recheck passed; corrected prerequisite CI succeeded. Phase 4's live report is **INCONCLUSIVE**: baseline 0/2 PASS, passport 1/2 PASS, three provider errors and 0/2 comparable pairs. Phase 5 adds evidence summary exports and local review; the actual demo video and organizer eligibility confirmation remain outstanding. This is **not a completed OpenFire submission**. See [work review](docs/work_review.md) and [final review](docs/phase5-review.md).
 
 This kit borrows the **documentation-first engineering discipline** of `haddybhaiya/recheck-`: same general Hatchling/pytest/ruff/mypy `pyproject.toml` pattern, phase-gated implementation, explicit safety boundaries, credential-free checks and auditable evidence. It does not copy Recheck's domain logic.
 
@@ -94,3 +94,26 @@ python smoke.py
 - The agent benchmark must run on the same immutable revision, runner, model and budgets on both sides.
 - Existing AGENTS.md is never overwritten by this package.
 - This repo is public-ready only after secrets review, documentation review and all MVP phase gates pass.
+
+## Restricted agent onboarding trial (Phase 4)
+
+Passports now carry a local HMAC provenance certificate binding guidance, source, policy, plan, original audit bytes, run and image. Output must be `AGENTS.generated.md` and is never overwritten. This is candidate guidance, not public attestation.
+
+After a successful audit, opt in explicitly:
+
+```powershell
+uv run --locked peeky trial tests/fixtures/good_repo --evidence PATH_TO_AUDIT.json --expected-command "python smoke.py" --expected-stdout "HELLO_FROM_GOOD_FIXTURE" --approve --model-consent --env-file .env
+```
+
+Use the existing ignored Gemma BYOK configuration. Each arm gets a fresh conversation and source capture with the same model, image, task and budgets; only passport guidance differs. Native tools can read bounded captured files or request the approved command in fresh offline Docker. The independent controller judges execution. No installation, host target execution or GitHub writes.
+
+Actual local report: baseline **0/2 PASS**, passport **1/2 PASS**, three provider HTTP 500 errors, **0/2 comparable pairs**. All failures are retained; no improvement estimate is claimed. See [the Phase 4 protocol and evidence paths](docs/phase4-onboarding.md). This is an implemented harness with an inconclusive live comparison, not completion of the whole MVP.
+
+
+## Export a readable evidence summary
+
+```powershell
+uv run --locked peeky report --evidence PATH_TO_AUDIT.json --evidence PATH_TO_STUDY.json --output .peeky/review-export
+```
+
+This validates local record authentication and writes JSON plus Markdown into a new directory. It makes no model request or target execution; incomplete evidence stays inconclusive. Original redacted logs remain private. See [Phase 5 review and remaining gates](docs/phase5-review.md).
