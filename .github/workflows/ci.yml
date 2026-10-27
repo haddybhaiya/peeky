@@ -32,5 +32,6 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install uv==0.12.19
       - run: uv sync --locked
-      - run: docker pull python:3.12-slim
+      - run: docker pull python@sha256:12316debbfb86890f6b2d825820612741ba527ad5a44e3902759141d572bfe8f
       - run: uv run --locked pytest tests/integration -m docker
+      - run: uv run --locked python scripts/validate_phase2.py
