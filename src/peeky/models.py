@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 
 @dataclass(frozen=True)
@@ -21,6 +21,8 @@ class StepResult:
     stderr: str
     outcome: str
     duration_ms: int
+    reason: str = ""
+    provenance: dict[str, object] = field(default_factory=dict)
 
     def dict(self) -> dict[str, object]:
         return asdict(self)

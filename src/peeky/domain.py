@@ -8,6 +8,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 
+from .images import DEFAULT_IMAGE
 from .models import Step
 
 
@@ -18,7 +19,7 @@ def canonical_hash(value: object) -> str:
 
 @dataclass(frozen=True)
 class RunPolicy:
-    version: str = "1"
+    version: str = "2"
     max_commands: int = 12
     max_command_chars: int = 400
     max_arguments: int = 24
@@ -38,9 +39,28 @@ class RunPolicy:
     network: str = "none"
     source_mount: str = "readonly"
     max_capture_chars: int = 5000
+    log_bytes_per_stream: int = 65_536
+    docker_metadata_timeout_seconds: int = 8
+    max_audit_steps: int = 1
+    approved_images: tuple[str, ...] = (DEFAULT_IMAGE,)
+    container_environment: tuple[str, ...] = (
+        "PYTHONDONTWRITEBYTECODE=1",
+        "PYTHONUNBUFFERED=1",
+        "HOME=/tmp",
+        "HTTP_PROXY=",
+        "HTTPS_PROXY=",
+        "FTP_PROXY=",
+        "ALL_PROXY=",
+        "NO_PROXY=",
+        "http_proxy=",
+        "https_proxy=",
+        "ftp_proxy=",
+        "all_proxy=",
+        "no_proxy=",
+    )
     allowed_binaries: tuple[str, ...] = ("python", "python3", "pytest")
     forbidden_shell_chars: str = ";&|<>`$\\"
-    image_namespace: str = "official-python-only"
+    image_namespace: str = "reviewed-official-python-digests-only"
     checkout_normalization: str = "utf8-crlf-to-lf-only"
 
     def __post_init__(self) -> None:
