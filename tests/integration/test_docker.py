@@ -206,7 +206,37 @@ def test_T014_real_memory_budget_is_inconclusive(
     docker_binary: str,
 ) -> None:
     result = run_fixture(script_repo("data = bytearray(600 * 1024 * 1024)\n", "python smoke.py"))
-    assert result.outcome == "INCONCLUSIVE" and result.reason == "MEMORY_LIMIT", result.dict()
+    assert result.outcome == "INCONCLUSIVE" and result.reason == "MEMORY_LIMIT", json.dumps(
+        result.dict(), indent=2, sort_keys=True
+    )
+    state = result.provenance["container_state"]
+    assert isinstance(state, dict) and state["OOMKilled"] is True
+    assert_removed(docker_binary, result)
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        "raise SystemExit(137)\n",
+        "import os, signal\n"
+        "pid = os.fork()\n"
+        "if pid == 0:\n"
+        "    os.kill(os.getpid(), signal.SIGKILL)\n"
+        "    os._exit(99)\n"
+        "_, status = os.waitpid(pid, 0)\n"
+        "assert os.WIFSIGNALED(status) and os.WTERMSIG(status) == signal.SIGKILL\n"
+        "os._exit(128 + os.WTERMSIG(status))\n",
+    ],
+    ids=["explicit-exit", "propagated-child-sigkill"],
+)
+def test_T014_unconfirmed_137_is_not_claimed_as_oom_or_target_failure(
+    script_repo: Callable[[str, str], Path], docker_binary: str, script: str
+) -> None:
+    result = run_fixture(script_repo(script, "python smoke.py"))
+    assert result.exit_code == 137, result.dict()
+    assert result.outcome == "INCONCLUSIVE" and result.reason == "TERMINATION_UNCERTAIN"
+    state = result.provenance["container_state"]
+    assert isinstance(state, dict) and state["OOMKilled"] is False
     assert_removed(docker_binary, result)
 
 

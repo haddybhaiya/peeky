@@ -26,3 +26,13 @@ Online dependency installation/prefetch from target README remains deferred. The
 - No privileged Docker, Docker socket, host network/PID namespace, root user, credential passthrough, mutable host source mounts or broad container pruning.
 - No target CI/README/AGENTS/model content controlling permissions, evidence verdicts, budgets, image trust or cleanup ownership.
 - No host `pip install` for a scanned target and no automatic dependency fetch while auditing.
+
+
+## Phase 3 model boundary
+
+BYOK Gemma is a separate opted-in controller HTTP call, never a target-container capability. Endpoint/model allowlists, explicit disclosure consent, bounded redacted prompts/responses, no tools/redirects/ambient proxies/retries and strict typed output constrain it. A frozen operator command/marker plus exact README-only diff prevents model edits to code, tests, assertions, evidence or policy. Human approval binds the entire authenticated proposal; drift/replay fails before dispatch. Fresh baseline/candidate containers keep the existing Phase 2 restrictions. Actual live failures are INCONCLUSIVE and cannot be promoted by model claims or offline mocks; see `phase3-repair.md`.
+
+
+## Exit-137/OOM observation correction (runner 2.1)
+
+Docker handles exit and OOM as separate events. The first State read after attached-client completion may be insufficient to identify a memory kill. Only for exited code 137 with OOMKilled explicitly false, perform at most five extra metadata reads under a one-second settling window (checked between reads; each call retains the existing bounded metadata timeout). Preserve all states in `container_state_observations`, with the final state also in `container_state`. Actual OOM confirmation remains required for MEMORY_LIMIT. A settled unconfirmed 137 is INCONCLUSIVE/TERMINATION_UNCERTAIN because explicit exits and signal-derived exits overlap; it cannot be inferred as OOM from the code alone. Normal exits are not polled; target timeout/resource/isolation/cleanup budgets are unchanged. This bug fix does not change the execution-policy identity, and runtime provenance identifies runner version 2.1.

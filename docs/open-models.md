@@ -2,7 +2,15 @@
 
 The organizer's Town Hall: **"Alan integration isn't mandatory. Open models are preferred."** The public Luma rules still advertise "Alan + open models"; confirm organizer interpretation. For the product choose transparent, openly licensed model weights whenever possible, disclose exact checkpoints and inference provider. Open-source **application code** does not make a proprietary hosted LLM open source.
 
-## Recommended default
+## Implemented Phase 3 selection: BYOK Gemma
+
+The owner selected **Gemma** and supplied their own Google AI Studio key. The single adapter uses the reviewed OpenAI-compatible endpoint with exactly `gemma-4-31b-it`; Google's authenticated model list confirmed availability. Gemma 4 31B instruction-tuned is an open-weight general-purpose checkpoint with coding capabilities (Apache 2.0 per Google's card), not a dedicated Qwen/CodeGemma checkpoint. No proprietary Gemini fallback is permitted. Hosted model/version and usage are recorded; the service does not attest an exact weights revision. A successful live gate requires separate evidence, not availability or mock results.
+
+This is BYOK: the user owns the key, provider account and quota. Current published Gemma 4 pricing is free; evidence labels that pricing-derived zero separately from returned billing. Missing response/usage/cost remains unknown. See `phase3-repair.md` and `work_review.md` for actual calls, results and limits.
+
+Official sources: [model card](https://ai.google.dev/gemma/docs/core/model_card_4), [Gemma API](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api), [protocol](https://ai.google.dev/gemini-api/docs/openai/), [pricing](https://ai.google.dev/gemini-api/docs/pricing#gemma-4).
+
+## Earlier planning recommendation (not implemented)
 
 **Qwen2.5-Coder-7B-Instruct** (Apache 2.0 model weights; confirm exact distribution/license) via a local endpoint or an opted-in provider hosting the open weights. Role: reason about setup logs and generate bounded README-only patch proposals. Do not add a frontier closed model as an undisclosed shortcut. OpenAI-compatible API is a *protocol*, not evidence that the underlying model is open.
 

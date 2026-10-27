@@ -47,3 +47,8 @@ Passport generation now requires schema 1.2, valid local authentication, full so
 `uv run --locked pytest -m 'not live' -q` includes real Docker cases; selecting Docker tests requires a running Linux daemon and cached reviewed image and fails instead of skipping missing prerequisites. Plain pytest excludes Docker/live by default. CI prefetches the pinned digest in its trusted setup step, then runs the Docker suite and fixture validator; workflow edits alone are not CI success.
 
 `uv run --locked python scripts/validate_phase2.py` audits the committed good, bad and no-op fixtures, verifies their expected PASS/FAIL/INCONCLUSIVE outcomes and local authentication, and retains the original redacted JSON records under `.peeky/phase2-validation/<fixture>/`. `summary.json` is a convenience index, not an authenticated verdict source. Exact local results and remaining CI/platform limits are in `work_review.md`.
+
+
+## T-014 portability correction
+
+Runner 2.1 records bounded final-State observations to accommodate separate Docker exit/OOM events. Confirmed OOM remains INCONCLUSIVE/MEMORY_LIMIT. Ambiguous 137 without confirmation is INCONCLUSIVE/TERMINATION_UNCERTAIN. The memory test still allocates 600 MiB under the unchanged 256 MiB limit and now explicitly asserts OOMKilled=true; it is not skipped or weakened to accept uncertainty. Separate real explicit-137 and propagated-child-SIGKILL fixtures assert the uncertain classification without an OOM claim. Unit histories cover delayed flags, bounded polling, elapsed deadline and no extra polling for ordinary exits. CI regression and actual results are in work review; a passing local run is not remote CI proof.

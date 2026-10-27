@@ -2,9 +2,22 @@
 
 **Product hypothesis:** A repository should be demonstrably installable for a first-time human and bootstrappable for a fresh coding agent, not merely documented as such.
 
-**Status:** Development scaffold, **not a completed OpenFire submission**. `inspect`, `doctor`, `audit` (restricted offline single-command Docker checks) and `passport` (verified-step guidance) are implemented. Model-driven diagnosis/repair and **agent cold-start A/B evaluation are planned development phases**, not shipped functionality in this kit. Never represent the scaffold as the complete MVP until [acceptance gates](docs/mvp-contract.md) pass.
+**Status:** Development MVP, **not a completed OpenFire submission**. `inspect`, `doctor`, `audit` (restricted offline Docker checks), `passport` and Phase 3's opt-in BYOK **Gemma** proposal/approved README recheck flow are implemented. The genuine Gemma response, exact human approval and fresh original/candidate Docker repair gate passed locally; remote Phase 3 CI remains pending. Exact evidence and earlier failures are in [work review](docs/work_review.md). Agent cold-start A/B evaluation remains planned. Never claim the complete MVP until [acceptance gates](docs/mvp-contract.md) pass.
 
 This kit borrows the **documentation-first engineering discipline** of `haddybhaiya/recheck-`: same general Hatchling/pytest/ruff/mypy `pyproject.toml` pattern, phase-gated implementation, explicit safety boundaries, credential-free checks and auditable evidence. It does not copy Recheck's domain logic.
+
+## BYOK Gemma README repair
+
+Bring your own Google AI Studio key using the ignored `.env` and the settings in `.env.example`. The selected checkpoint is `gemma-4-31b-it`, an open-weight instruction-tuned Gemma model with coding capabilities. It is used through Google's OpenAI-compatible endpoint, with no proprietary Gemini fallback. Deterministic tests need no key. Set `PEEKY_MODEL_CONSENT=true` only after reviewing the bounded redacted disclosure.
+
+After committing a target's clean source, collect a real failed audit, then freeze an independent expected command and stdout marker before diagnosis:
+
+```powershell
+uv run --locked peeky audit tests/fixtures/outdated_repo --approve
+uv run --locked peeky diagnose tests/fixtures/outdated_repo --evidence PATH_TO_FAILED_RECORD --expected-command "python repair_smoke.py" --expected-stdout PEEKY_RECHECK_OK --model-consent --env-file .env
+```
+
+Review the returned README-only diff and exact approval digest. Only then run `peeky recheck TARGET --proposal PATH_TO_PROPOSAL --approve-proposal sha256:DIGEST`. This runs the unchanged baseline and approved candidate in separate fresh restricted containers; it never patches the target worktree. Only the controller's frozen command/marker oracle can record VERIFIED. A model cannot declare verified status. Missing completions, quota errors and uncertain execution remain INCONCLUSIVE; missing free-tier usage/cost alone is recorded as unknown without blocking a valid proposal. See [the complete repair contract](docs/phase3-repair.md) for limits, cost accounting and one-attempt budgets.
 
 ## Quick start
 

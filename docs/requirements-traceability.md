@@ -5,9 +5,9 @@
 | FS-001 | parser.py, sources.py, domain.py, cli.py | T-001..T-003 | Phase 1 local inspect/parser gates verified; no target execution |
 | FS-002 | policy.py, sources.py, hosttools.py, runner.py, cli.py | T-004..T-007,T-011,T-013 | local pre-execution/no-fallback and real isolation cases passed |
 | FS-003 | evidence.py, provenance.py, redaction.py, runner.py, sources.py | T-008,T-014..T-016 | local source/image/policy/time/log/cleanup provenance and HMAC integrity passed; no public attestation claim |
-| FS-004 | runner.py, fixtures, validate_phase2.py | T-009..T-017 | local real Docker gate passed; digest-pinned CI workflow updated, remote execution pending |
-| FS-005 | providers/ (planned) | T-018,T-019,T-023 | not implemented |
-| FS-006 | repair.py (planned), runner.py | T-020..T-025 | not implemented |
+| FS-004 | runner.py, fixtures, validate_phase2.py | T-009..T-017 | local real Docker gate and observed remote core/sandbox jobs passed (Actions 40493116591) |
+| FS-005 | providers/openai_compatible.py, cli.py | T-018,T-019,T-023 | BYOK Gemma, strict schema and genuine retained-response T-023 passed; Google frame normalization and preserved request provenance documented |
+| FS-006 | repair.py, runner.py | T-020..T-025 | strict README diff/approval gates and real fresh Docker tests passed; genuine Gemma proposal explicitly approved by owner, then matching fresh recheck VERIFIED |
 | FS-007 | passport.py, sources.py, evidence.py, provenance.py | T-008,T-015,T-016,T-026..T-028 | source/policy/runtime/HMAC consistency verified locally; clean repair/retest and full Phase 4 gate pending |
 | FS-008 | benchmark.py (planned) | T-029..T-032 | not implemented |
 | FS-009 | reports.py (planned), evidence.py | T-033 | partial JSON |
@@ -47,3 +47,25 @@ The full local deterministic command `uv run --locked pytest -m 'not live' -q` p
 | T-017 | No-op and multi-step plans preserve zero-execution INCONCLUSIVE records; incomplete/timeout/blocked cannot pass | `test_T017_noop_fixture_preserves_inconclusive_evidence`, `test_T017_multiple_steps_block_before_execution`; verdict regression units |
 
 The missing-image integration queries an intentionally absent digest through the metadata-only cache inspector; execution still rejects unreviewed digests before Docker. It does not delete the shared reviewed image to simulate a cache miss. The standalone validator retains original redacted good/bad/no-op JSON with verified local authentication and expected outcomes.
+
+## Phase 3 acceptance evidence
+
+The deterministic gate completed 163 tests, 1 live test deselected, 0 skips. The additional two real Docker repair cases exercise actual containers; their model responses are explicitly mocked. They establish no genuine provider success. No Phase 3 CI run or human approval is inferred from these results.
+
+| ID | Concrete checks | Evidence boundary |
+|---|---|---|
+| T-018 | `test_providers.py::test_T018_*`, incomplete provider data cases | Strict typed JSON; authority/duplicate/type/budget/truncation/model mismatch rejected |
+| T-019 | `test_T019_*` | Consent before disclosure; explicit BYOK config; missing credentials leave core inspect functional; endpoint/model fail closed |
+| T-020 | `test_repair.py::test_T020_*` | Exact-context README-only command correction; traversal/renames/other files rejected |
+| T-021 | `test_T020_T021_all_other_paths_rejected`, `test_T021_*` | Tests/evidence/config paths and assertion-bypassing or extra commands cannot be changed |
+| T-022 | `test_repair_docker.py::test_T022_real_fresh_recheck_requires_frozen_oracle` (2 cases); candidate/source/approval units | Real fresh baseline FAIL/candidate PASS, equal image ID, different containers, unchanged code; missing marker remains INCONCLUSIVE; changed revision invalidates approval |
+| T-023 | `scripts/validate_phase3.py --live`; `tests/live/test_gemma.py` | Separately authorized actual Gemma trace with checkpoint/version/usage/cost; provider errors fail the gate, never skips |
+| T-024 | `test_T024_persistent_reservation_survives_process_restart`; real diagnosis/recheck replay assertions | Exclusive persistent claims prevent retries/repair loops; explicit new operator authorization required for a separate attempt |
+| T-025 | `test_T025_*`; model authority-field rejection cases | Injected README/model content stays data; frozen oracle/policy and permissions remain controller-owned |
+
+Updated T-023: the owner authorized further retries. A real `gemma-4-31b-it` response was retained with request ID and provider usage (309 prompt, 168 completion, 685 total tokens). A Google-flagged thought frame was normalized without relaxing strict JSON/schema/diff checks. Offline response revalidation preserved the original request/response/attempt metadata and signed record; it made no extra HTTP request. Live evidence gate: 1 passed in 3.47s. The owner then approved the exact artifact digest, and fresh baseline FAIL/candidate PASS plus the frozen marker was VERIFIED. Earlier failures remain preserved. Cost basis is published free-tier pricing, not an observed invoice; missing usage/cost is nonfatal but explicitly unknown under the latest owner instruction.
+
+Final retry validation: 169 deterministic tests passed, 1 live deselected, 0 skipped in 173.18s; separately selected genuine-response T-023 passed (1 passed in 3.47s). The human-approved fresh recheck is VERIFIED in `61b8c0c1dd3d4a7f8281f19cce57e43f.json`. No Phase 3 remote CI or Phase 4 benchmark is claimed.
+
+
+T-014 follow-up: `test_T014_delayed_oom_flag_preserves_both_state_observations`, `test_T014_unconfirmed_137_has_bounded_probes_even_if_clock_stalls`, `test_T014_state_settle_deadline_prevents_more_probes` and the four `test_T014_other_states_are_not_polled` cases exercise state ordering/bounds. The original real OOM test now explicitly requires Docker's OOM flag. `test_T014_unconfirmed_137_is_not_claimed_as_oom_or_target_failure` runs real explicit exits and independently verified child SIGKILL propagation under the same sandbox, preserving INCONCLUSIVE without claiming OOM. Run 40502294999 failed before this local correction; a corrected remote CI result is pending.

@@ -155,3 +155,90 @@
 **Phase gate:** Phase 2 `LOCAL_GATE_PASSED`; all requested local gates passed with real Docker evidence. Remote CI remains pending, so no global CI verification is claimed.
 
 **Next task:** obtain remote CI confirmation through the owner's normal review workflow, then begin Phase 3 only with authorization. Nothing staged, committed or pushed by this task.
+
+
+## 2026-10-27 ? Phase 3 implementation, local gates passed, live provider blocked
+
+**Prerequisite:** before edits, the checkout was clean on `phs3` at `57201b1bab362774dc48c5a4286d46b9f5e7646e` (merged PR #4). Read-only GitHub inspection confirmed Actions run 40493116591 completed core and sandbox jobs successfully, including Python 3.12, Docker tests and Phase 2 fixture validation. Phase 2's previously pending remote gate is now observed. No GitHub write, workspace commit/staging/push, model download or release was performed for Phase 3.
+
+**Changed:** one standard-library OpenAI-compatible BYOK adapter, strict typed patch proposals, a single-line README command correction allowlist, frozen operator command/stdout oracle, authenticated proposal approval digests, durable one-attempt reservations and separate fresh original/candidate Docker rechecks. The target worktree/index is never patched. The candidate has its own genuine isolated Git revision, with identical non-README hashes/modes. Only the independent controller can set VERIFIED after actual matching checks; model output cannot approve, weaken tests, change policy/evidence or declare verified status. Added CLI diagnose/recheck, offline adversarial contracts, two real Docker repair cases, a reviewed outdated-command fixture, a one-attempt live validator and explicit retained-evidence T-023 gate.
+
+**Owner-selected model/BYOK:** the owner replaced the earlier Qwen plan with Gemma and supplied a Google AI Studio key in ignored `.env`. Filled only its empty base URL/model fields using Google's official OpenAI-compatible endpoint and `gemma-4-31b-it`; preserved the key without printing it. Authenticated model discovery succeeded and listed Gemma 4 31B/26B. Gemma 4 31B instruction-tuned is open-weight/code-capable and general-purpose, not a dedicated Qwen/CodeGemma coding checkpoint. The adapter records this distinction, checkpoint/version and unknown hosted weights revision. Successful-response cost accounting distinguishes Google's published free-tier pricing from measured token usage/billing. No fallback to proprietary Gemini or a paid endpoint is allowed.
+
+| Completed command/check | Actual result |
+|---|---|
+| Focused offline provider/repair contracts after initial fixes | 42 passed in 6.70s; no key/network |
+| `uv run --locked pytest tests/integration/test_repair_docker.py -m docker -q` | 2 passed in 38.19s; actual baseline/candidate containers, explicitly mocked model |
+| `uv run --locked pytest -m 'not live' -q` | **163 passed, 1 live deselected, 0 skipped in 158.02s**; 146 controller/source and 17 real Docker cases |
+| `.venv\Scripts\ruff.exe check .` | All checks passed |
+| `.venv\Scripts\ruff.exe format --check .` | 42 Python files already formatted |
+| `.venv\Scripts\mypy.exe src tests` | Success: 38 source files |
+| `.venv\Scripts\python.exe scripts/check_docs.py` | 17 required public files checked |
+| `uv sync --locked --offline` | 16 packages resolved/checked; no new dependencies |
+| `uv build --offline --wheel` | Built `dist/peeky-0.1.0.dev0-py3-none-any.whl` for local validation |
+| `uv run --locked python scripts/smoke_wheel.py` | Passed clean network-free install, module/console versions and inspect outside checkout |
+| `uv run --locked python scripts/validate_phase3.py --live --env-file .env --output .peeky/phase3-live` | Real baseline FAIL; genuine completion request returned HTTP 500; signed INCONCLUSIVE attempt, no returned usage/cost |
+| Same live validator with `--output .peeky/phase3-live-manual2`, explicitly authorized separately after local gates | Real baseline FAIL; additional same-checkpoint request failed to connect (10385ms); signed INCONCLUSIVE attempt; no automatic retries |
+| `PEEKY_LIVE_EVIDENCE=.../4a163a147ce14ec491192e3e9ea439c5.json`, then `uv run --locked pytest tests/live/test_gemma.py -m live -q` | **1 failed in 0.48s, 0 skipped**, accurately rejecting the actual incomplete provider trace; no new HTTP request |
+
+**Behavior evidence:** exact-schema rejection covers duplicate/unknown/authority fields, bad types/confidence, missing usage, model substitution, output budget and truncated completions. Consent precedes configuration/source/network; missing provider config does not break core inspection. Diff tests deny traversal/renames/tests/AGENTS/evidence paths, extra hunks/commands, unrelated prose edits and assertion-bypassing inline code/options. Approval/source drift and repeated attempt claims fail before execution. Real Docker comparisons show baseline FAIL then candidate command PASS in different containers under the same image ID, unchanged source bytes and cleanup. A missing exact marker still produces INCONCLUSIVE despite command PASS. These are actual runner checks with mocked model proposals, not a live model repair demonstration.
+
+**Retained live evidence:** `.peeky/phase3-live/summary.json` points to baseline `46068d130e7e462ea05e4a6a24c68acc` and attempt `33772b17ad704ddfb04cc80d3b2ca5cd`; `.peeky/phase3-live-manual2/summary.json` points to baseline `f0de2b5195b0452e9d79cdd57e474944` and attempt `4a163a147ce14ec491192e3e9ea439c5`. Individual records are authenticated; convenience summaries are not. The earlier `.peeky/phase3-validation` preflight baseline is also preserved: a serialized list-versus-tuple identity comparison stopped before any provider call. Canonical hashing fixed that representation bug without weakening source binding. Initial mypy duplicate fixture names were resolved by naming the new entrypoint `repair_smoke.py`; Windows pytest path limits were resolved with bounded parameter IDs. No assertion was relaxed to produce the final gate.
+
+**Docs updated:** Phase 3 contract, Gemma/BYOK configuration example, README/contributor flow, architecture/security/evidence boundaries, assumptions A-16..A-19, ADR-012, test plan, T-018..T-025 mapping, phase tracker, repository analysis and public manifest. Historical Phase 0?2 entries remain historical. No Phase 3 remote CI result is claimed.
+
+**Known limits / concrete blocker:** both authorized Google completion attempts failed before returning a model response. Requested checkpoint/version is recorded; observed served model, token usage and actual cost remain unknown. Do not infer free billed usage, a valid live proposal or success from the model-list request. No real proposal exists to present for human approval, so no live human-approved recheck is claimed. The full phase cannot pass T-023. Hosted exact weights revision, provider-side privacy/availability, pattern redaction completeness and trusted host/meaningful-oracle assumptions remain limits. Arbitrary README rewrites, package installation, multi-step repairs, benchmarks and release are outside this implementation.
+
+**Phase gate:** implementation/local deterministic gates passed; Phase 3 **BLOCKED at T-023**, not VERIFIED. Stop provider requests on the demonstrated failure. Do not promote Phase 4.
+
+**Next task:** restore the selected Gemma OpenAI-compatible service/transport under renewed operator authorization, obtain one genuine bounded structured response with usage/cost provenance, then present its exact diff/digest for human review before fresh recheck. Do not silently retry, change checkpoint/protocol or fabricate missing evidence.
+
+
+**Final review/gate repeat:** corrected validation ordering for an oversized JSON integer confidence so it rejects cleanly before float conversion; the adversarial range case now exercises that input. Final `uv run --locked pytest -m 'not live' -q`: **163 passed, 1 live deselected, 0 skipped in 175.67s**. Rebuilt the final wheel and repeated installed CLI smoke successfully. All 79 public manifest hashes, all 18 packaged source modules, UTF-8 README package metadata and clean-public-export docs passed; actual provider key absent from every public file. Both retained baseline/attempt pairs reauthenticated, confirmed source/policy binding and secret exclusion, and their owned containers were independently absent. Final Ruff/type/docs/diff checks passed. The incomplete live gate remains failed; no additional request, human approval, workspace commit or GitHub write was made.
+
+
+## 2026-10-27 ? Phase 3 live blocker resolved, exact human-approved recheck VERIFIED
+
+**Renewed authorization:** the owner explicitly requested Gemma retries and made missing free-model usage/cost metadata nonfatal. Used a bounded batch of three additional attempts, with separate durable claims and immutable records; no automatic provider loop or model/checkpoint switch. Explicit retry authorization also restored the local `.env` disclosure-consent setting to true; key/base URL/checkpoint were preserved. No GitHub writes or workspace commits.
+
+**Actual retry results:** `.peeky/phase3-retry3/proposals/7f3685b4f26e4b82b2a67873387b719e.json` records HTTP 503 and Google's explicit temporary high-demand message. `.peeky/phase3-retry4/proposals/875fbdd3f9ee4b058b48d30bcdaa2d7f.json` retains a genuine `gemma-4-31b-it` response (request ID `LJHgap_uNv6A3LUPo-6e8QE`, 309 prompt / 168 completion / 685 total provider-reported tokens), initially rejected because it had a Google-flagged thought prefix before its JSON. `.peeky/phase3-retry5/proposals/074a1e411d924ed586110ef843cffc27.json` records a read timeout after 45159ms. Initial HTTP 500/connection records remain unchanged. There were no further provider requests after this batch.
+
+**Changed and tested:** extend the response wait from 10 to 45 seconds; preserve bounded redacted transport diagnostics; allow a valid structured proposal with unknown usage/cost metadata under the owner's instruction, without inventing billing. Request Google's documented minimal thinking mode and disable thought inclusion for future calls. If Google nevertheless supplies its explicit thought flag and a complete leading thought frame, remove only that provider frame and validate the remainder as the original exact JSON schema. Unflagged/unterminated frames, authority fields and extra objects still fail. Extract response validation into a function that can copy an existing trace without mutating original request/response/hash/ID/attempt/latency metadata; request-time failures still retain observed metadata.
+
+**No invented live call:** validated the already-received retry-4 response offline through the corrected framing decoder. Authenticated linked artifact `.peeky/phase3-revalidated/proposals/93be74364fee4196aac897508c032c34.json` records the original signed record hash, previous parser rejection and **zero additional network requests**. It preserves the actual original response and request metadata. The original request preceded the minimal-thinking setting; the later minimal-setting call timed out, so its server-side behavior is not claimed verified. Cost is `published_free_tier`, not a measured invoice; hosted exact weights revision remains unknown.
+
+**Concrete human review:** displayed the only candidate change, `python outdated.py` to `python repair_smoke.py`, with frozen stdout marker `PEEKY_RECHECK_OK`. The owner explicitly approved digest `sha256:c0973e0195e9d581847a9cb1a8c95b750495bf8f79079292654afd8ed3550a12` for the isolated fixture. The model did not supply approval or verified status.
+
+**Actual recheck:** `.peeky/phase3-revalidated/rechecks/61b8c0c1dd3d4a7f8281f19cce57e43f.json` is controller **VERIFIED**: unchanged original rerun FAIL; approved derived candidate PASS; exact marker observed; different fresh containers and matching image/policy; code/test bytes and modes preserved and containers cleaned up. The target worktree/index were never patched. `.peeky/phase3-revalidated/summary.json` links the original baseline, reviewed proposal and final comparison. Individual records are authoritative authenticated evidence; the convenience summary is not authenticated.
+
+**Observed gates so far:** focused provider/repair contracts: 43 passed in 8.24s before the additional framing/provenance cases. Complete deterministic retry gate: 168 passed, 1 live deselected, 0 skips in 172.21s. T-023 selected against the genuine linked retained response: **1 passed in 3.47s**, with no new request. Final provenance regression, complete deterministic repeat, wheel/manifest/docs checks are recorded below when completed. Earlier blocked entries remain historical; no failed record/assertion was deleted or weakened to claim success.
+
+**Phase gate:** Phase 3 local live/approval/fresh-Docker gates now pass, pending final routine validation; remote Phase 3 CI remains unobserved because no GitHub writes are authorized. Phase 4 benchmarks and release are not implemented/promoted.
+
+
+**Final Phase 3 retry gate:** `uv run --locked pytest -m 'not live' -q`: **169 passed, 1 live deselected, 0 skipped in 173.18s**. Separately selected T-023: **1 passed in 3.47s**, using the genuine retained response and explicitly linked zero-request revalidation. Exact owner-approved fresh Docker recheck: **VERIFIED**, original FAIL/candidate PASS with frozen marker. Independently reauthenticated original completion, linked revalidation, approved digest and final comparison; verified unchanged target source, identical non-README files/modes, matching policy/image, distinct containers and owned-container absence. Final wheel source-module bytes and README metadata match. Lint, format, types, docs and package smoke passed; public manifest refreshed. No additional model calls, commits, staging or GitHub writes. Phase 3 is **LOCAL_GATE_PASSED**; remote Phase 3 CI remains pending. Next task is owner review/CI through their normal workflow, then separately authorized Phase 4; no benchmark or release claim.
+
+
+## 2026-10-27 ? T-014 remote CI regression corrected locally
+
+**Observed failure:** read-only GitHub inspection of run 40502294999 / sandbox job 122182712838 at `8497825` confirmed core success and sandbox **1 failed, 16 passed, 1 deselected in 13.14s**. The memory stress case returned code 137 classified FAIL; the log's assertion abbreviated the full result, so the exact OOM flag/event timing was not available. Preserved the original GitHub-redacted job text under ignored `.peeky/ci-oom-regression/original-job-log.json`. The unchanged original test passed locally before edits (1 passed in 14.42s), so this was not reproduced as a deterministic local failure.
+
+**Changed:** runner 2.1 refreshes only exited-137 states with OOMKilled explicitly false, with at most five extra reads under a one-second settling window; each metadata operation retains its existing timeout. Preserve all observed states and final state in provenance. A boolean OOMKilled=true is still required for MEMORY_LIMIT. Unconfirmed 137 is INCONCLUSIVE/TERMINATION_UNCERTAIN because signal and explicit exit statuses overlap. Normal exits do not incur the settling loop; ordinary target failures, resource limits, source/image identity, isolation and cleanup remain enforced. This is a cautious fix for a plausible exit/OOM observation ordering, not a claim that CI's event timing was directly measured.
+
+**Regression evidence:** unit histories cover false-then-true OOM observation with preserved snapshots, the six-read cap even with a stalled clock, elapsed deadline, and no polling for four unrelated terminal/running states. Real integration keeps the 600 MiB allocation under the same 256 MiB sandbox and strengthens its assertion to require actual OOMKilled=true; failures now print full redacted result JSON. Two real non-OOM cases exercise an explicit exit 137 and independently verified child SIGKILL propagation, requiring INCONCLUSIVE without claiming memory exhaustion. The first new self-SIGKILL fixture exited zero because Linux PID 1 ignored its own signal; corrected the fixture to verify actual child wait status, without relaxing the expected outcome.
+
+| Check | Actual result |
+|---|---|
+| Initial focused runner/Docker regression | 28 passed, 1 failed in 83.43s; failure was the PID 1 self-signal fixture described above |
+| Corrected focused runner/Docker regression | 29 passed in 72.37s; the later deadline case is included in the full gate |
+| `uv run --locked pytest -m 'not live' -q` | **178 passed, 1 live deselected, 0 skipped in 172.88s**, including the seven added unit cases and two real Docker cases |
+| Ruff lint / format | All checks passed; 42 files formatted |
+| `mypy src tests` | Success: 38 source files |
+| `scripts/check_docs.py` | 17 public contracts checked |
+| Offline wheel build and installed CLI smoke | Passed; module/console versions and isolated inspect outside the checkout |
+
+**Docs updated:** OOM observation/security contract, runner contract, T-014 requirement/test mapping, assumption A-20, ADR-013, phase tracker and this ledger; public manifest refreshed. Earlier source snapshots, reports, local successes and CI failures remain historical evidence. No assertions were relaxed, checks skipped, target code run on host, dependencies installed or model calls made.
+
+**Known limits / phase gate:** local deterministic, package and documentation gates pass. The one-second metadata window cannot guarantee that every daemon eventually reports an OOM event; unconfirmed 137 stays uncertain rather than becoming an invented memory/target failure. The strict real OOM test will still fail an environment that never supplies that confirmation. Corrected remote CI has **not** run; current remote failure is not relabeled success. No workspace staging, commit, push or GitHub write was performed for this fix.
+
+**Next task:** review/publish this patch and observe a fresh sandbox CI run before claiming the remote gate passed. Keep the Phase 3 model/repair evidence and Phase 4 scope separate from this runner correction.

@@ -145,6 +145,30 @@ def inspect_image(binary: str, reference: str) -> dict[str, object]:
     return data
 
 
+def inspect_final_state(
+    binary: str, name: str
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    """Allow Docker's separate exit/OOM events to settle, without inferring OOM from 137."""
+    observations: list[dict[str, object]] = []
+    deadline = time.monotonic() + 1.0
+    for delay in (0.0, 0.05, 0.1, 0.2, 0.4, 0.25):
+        if observations:
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(min(delay, max(0.0, deadline - time.monotonic())))
+        state = _json(
+            binary, "inspect", "--format", "{{json .State}}", name, reason="STATE_UNAVAILABLE"
+        )
+        observations.append(state)
+        if not (
+            state.get("Status") == "exited"
+            and state.get("ExitCode") == 137
+            and state.get("OOMKilled") is False
+        ):
+            break
+    return observations[-1], observations
+
+
 def create_command(
     binary: str, step: Step, source: SourceSnapshot, image: str, name: str, run_id: str
 ) -> list[str]:
@@ -336,7 +360,7 @@ def execute(step: Step, source: SourceSnapshot, image: str, timeout: float = 20)
     run_id = uuid.uuid4().hex
     name = "peeky-" + run_id
     provenance: dict[str, object] = {
-        "runner_version": "2",
+        "runner_version": "2.1",
         "image_requested": image,
         "image_digest": "",
         "image_id": "",
@@ -399,10 +423,9 @@ def execute(step: Step, source: SourceSnapshot, image: str, timeout: float = 20)
             logs_complete=not (collected.limited or collected.timed_out),
             attach_exit_code=collected.code,
         )
-        state_data = _json(
-            binary, "inspect", "--format", "{{json .State}}", name, reason="STATE_UNAVAILABLE"
-        )
+        state_data, state_observations = inspect_final_state(binary, name)
         provenance["container_state"] = state_data
+        provenance["container_state_observations"] = state_observations
         target_started = bool(state_data.get("StartedAt")) and not str(
             state_data["StartedAt"]
         ).startswith("0001-")
@@ -421,7 +444,7 @@ def execute(step: Step, source: SourceSnapshot, image: str, timeout: float = 20)
                 if target_started
                 else ("INCONCLUSIVE", "CONTAINER_START_TIMEOUT")
             )
-        elif state_data.get("OOMKilled"):
+        elif state_data.get("OOMKilled") is True:
             reason = "MEMORY_LIMIT"
         elif state_data.get("Error") or not target_started:
             reason = "COMMAND_NOT_STARTED"
@@ -429,6 +452,10 @@ def execute(step: Step, source: SourceSnapshot, image: str, timeout: float = 20)
             reason = "STATE_UNCERTAIN"
         elif collected.code != exit_code:
             reason = "ATTACH_STATUS_MISMATCH"
+        elif exit_code == 137:
+            # Signal-derived exit codes and explicit target exits overlap. No
+            # observed OOM flag means the cause is unknown, not proven OOM/FAIL.
+            reason = "TERMINATION_UNCERTAIN"
         else:
             outcome, reason = (
                 ("PASS", "COMMAND_EXIT_ZERO")
