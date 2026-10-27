@@ -7,10 +7,12 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .domain import DEFAULT_POLICY, RunState, canonical_hash, plan_hash, valid_history
-from .evidence import verdict
+from .evidence import runtime_verified, verdict
 from .models import StepResult
 from .parser import read_steps
 from .policy import safe_argv
+from .provenance import verify
+from .redaction import sanitized
 from .sources import SourceError, read_regular, safe_root, snapshot
 
 
@@ -24,11 +26,15 @@ def make_passport(repo: Path, evidence_file: Path) -> str:
         payload = json.loads(raw.decode("utf-8"))
     except (SourceError, OSError, ValueError) as exc:
         raise PassportError("Invalid or oversized evidence file") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != "1.1":
-        raise PassportError("Passport requires source-bound evidence in schema 1.1")
+    if not isinstance(payload, dict) or payload.get("schema_version") != "1.2":
+        raise PassportError("Passport requires controller-bound evidence in schema 1.2")
+    try:
+        verify(payload)
+    except (ValueError, OSError) as exc:
+        raise PassportError("Controller evidence authentication failed") from exc
     if payload.get("verdict") != "PASS":
         raise PassportError("Passport requires PASS evidence")
-    if payload.get("execution") != "offline-docker-per-command":
+    if payload.get("execution") != "offline-docker-single-command":
         raise PassportError("Evidence execution mode is unsupported")
     try:
         repo = safe_root(repo)
@@ -50,7 +56,7 @@ def make_passport(repo: Path, evidence_file: Path) -> str:
             or canonical_hash(payload.get("policy")) != DEFAULT_POLICY.sha256
         ):
             raise PassportError("Evidence policy does not match the controller")
-        if payload.get("steps") != [asdict(step) for step in steps]:
+        if payload.get("steps") != sanitized([asdict(step) for step in steps]):
             raise PassportError("Evidence commands do not match source instructions")
         run = payload.get("run")
         if (
@@ -64,14 +70,18 @@ def make_passport(repo: Path, evidence_file: Path) -> str:
         if not isinstance(raw_results, list):
             raise PassportError("Missing result evidence")
         results = [StepResult(**item) for item in raw_results]
-        if verdict(steps, results) != "PASS":
+        if (
+            len(steps) != DEFAULT_POLICY.max_audit_steps
+            or verdict(steps, results) != "PASS"
+            or not all(runtime_verified(r, source, str(payload.get("image"))) for r in results)
+        ):
             raise PassportError("Incomplete or inconsistent step evidence")
     except (SourceError, OSError, TypeError, KeyError) as exc:
         raise PassportError("Source or evidence cannot be validated") from exc
     lines = [
         "# Generated agent onboarding passport (candidate)",
         "",
-        "> Independently verify before merging; local JSON is not signed execution proof.",
+        "> Independently verify before merging; local HMAC is not a public execution attestation.",
         "",
         f"Git commit: `{source.git_commit}`",
         f"Source digest: `{source.source_sha256}`",

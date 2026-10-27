@@ -178,9 +178,10 @@ def test_capture_limits_enforced(repo: Path, git: Callable[..., bytes], limit: s
         )
 
 
-def test_tracked_secret_paths_rejected(repo: Path, git: Callable[..., bytes]) -> None:
-    (repo / ".env").write_bytes(b"SECRET=fixture")
-    git(repo, "add", "-f", ".env")
+@pytest.mark.parametrize("name", [".env", "controller.key"])
+def test_tracked_secret_paths_rejected(repo: Path, git: Callable[..., bytes], name: str) -> None:
+    (repo / name).write_bytes(b"SECRET=fixture")
+    git(repo, "add", "-f", name)
     git(repo, "commit", "-qm", "tracked secret fixture")
     with pytest.raises(SourceError, match="credential"):
         fingerprint(repo)

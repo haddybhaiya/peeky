@@ -24,7 +24,7 @@ packages = ["src/peeky"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--strict-markers -ra"
+addopts = "--strict-markers -ra -m 'not docker and not live'"
 markers = [
     "unit: no I/O except temporary files",
     "smoke: package and CLI smoke",

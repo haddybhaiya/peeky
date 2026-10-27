@@ -1,28 +1,28 @@
 # Runner isolation and security contract
 
-**Threat:** malicious or accidental commands in README; source files whose scripts do unsafe things; hostile model output; unknown dependencies; secrets printed in logs.
+**Threat:** malicious commands/source/instructions in a target repo; unsafe image/environment choices; resource exhaustion; credential leakage in logs; confusing infrastructure errors with target failures. Target README, AGENTS, code and output remain data, never controller instructions.
 
-## What foundation currently enforces
+## Current controls
 
-Annotated fences only; max 12 commands; one command per line; simple `shlex` invocation with no shell metacharacters; python/python3/pytest allowlist; explicit `--approve`; `docker run --rm --pull=never --network none --read-only --cap-drop ALL --security-opt=no-new-privileges --pids-limit=64 --memory=256m --cpus=1 --user 65534:65534 --tmpfs /tmp`; repository bound read-only at /repo; per-command client timeout; stored stdout/stderr excerpt cap. Capture memory is not bounded before truncation, and timeout handling does not explicitly remove a still-running container; see `repository-analysis.md`.
+Phase 1 validates clean scoped committed Git source and exports original verified bytes with portable path/type/link/credential checks. Phase 2's runner accepts only controller-created verified snapshots and captured policy-validated steps. It never mounts the live repo or an arbitrary supplied Path. No target imports, scripts, package installs, Git hooks or filters execute on the host.
 
-These controls are **not equivalent to secure execution of arbitrary hostile repos**. A malicious Python script still executes code inside the container. Docker shares a kernel with the host and may have exploitable vulnerabilities. Execute unknown code only on disposable infrastructure.
+Audit permits exactly one opted-in smoke command after `--approve`. Source planning can describe more steps, but no-op and unsupported multi-step plans retain BLOCKED/INCONCLUSIVE evidence without execution. A controller allowlist permits only the reviewed cached official Python digest. Image ID/RepoDigest/Linux identity and effective container configuration are checked before start. Target execution uses `--pull=never`, no network, read-only root/source, UID/GID 65534, cap-drop ALL, no-new-privileges, no privileged/devices/host PID/IPC/socket mounts, fixed non-secret environment and no persistent container log driver.
 
-Phase 1 adds committed, bounded source exports to the CLI path: raw Git object identities and index/worktree bytes are checked, source symlink/submodule/reparse paths are denied, and known credential paths/Git metadata are excluded. Inspect never invokes Docker; audit gives Docker a verified temporary export instead of the live input tree. Policy limits and run/plan identities are recorded. Git plumbing is trusted host tooling; target commands, imports, hooks and filters are not executed on the host. See `source-capture.md`. The low-level runner still accepts a Path for its internal fixture API; Phase 2 must enforce the full runner boundary and validate real container behavior.
+Runtime budgets are 256 MiB RAM with no extra swap, one CPU, 64 PIDs, 128 open files, 32 MiB noexec/nosuid/nodev tmpfs and a default 20-second command deadline. Host log collection retains at most 65,536 raw bytes per stream, redacts before returning/storing transcripts, and stops output floods. Timeout and exceptions trigger label-checked removal of the owned container plus a follow-up remaining-container query. Uncertain cleanup cannot yield PASS. Real integration reads kernel cgroups, checks filesystem/network/UID/capabilities, triggers OOM/timeout/log limits and verifies container absence.
 
-## Must implement before final MVP
+Creation, target attachment, inspected State and cleanup are separate. Missing image/daemon/executable or ambiguous transport is INCONCLUSIVE; a target actually exiting 125/126/127 is FAIL. Redacted full bounded streams, hashes, byte/completeness information, reason codes, source/image/policy identity, timestamps and inspected isolation are retained. Evidence uses private per-user HMAC integrity and atomic exclusive finalization; source/controller key material is not mounted or shared. See `phase2-runner.md` for exact key locations, retention and filesystem requirements.
 
-1. Phase 1 completed the CLI source-capture prerequisite (verified Git identities, selected-scope cleanliness, regular bounded exports). Before the final MVP, validate the complete runner boundary on real Docker, including filesystem race assumptions and credential exclusion; do not treat filename checks as a full secret scanner.
-2. Verify image digest and fail closed if chosen digest unavailable. CI must pin actual digest, not mutable tag.
-3. Redaction of tokens, suspicious URL query strings and environment values from all traces; discard raw secrets at collection boundary.
-4. Distinguish infrastructure failures (image missing, daemon unreachable) from target FAIL by inspecting Docker errors, not merely return code.
-5. Report incomplete command coverage and do not pretend that isolated sequential containers share installed dependencies.
-6. Reserve online dependency install for a separate explicitly approved network-controlled prefetch mechanism; **not** arbitrary `pip install` from a README in an unrestricted networked shell.
-7. Test path traversal, symlink escapes, command substitution, shell chaining, resource timeouts, missing Docker, writable mount, model tool injection, poisoned README, and untrusted AGENTS.md.
+## Limits and remaining gates
 
-## Explicitly prohibited shortcuts
+These controls are not a hardened multi-tenant boundary. Docker shares a kernel with the host. Host operator, local Docker daemon and source filesystem are trusted; hostile concurrent host mutation, daemon/kernel compromise and hard controller termination are not defeated by file permissions or normal-return cleanup. Unknown code still belongs on disposable infrastructure, without host secrets.
 
-- `subprocess.run(..., shell=True)` on host.
-- Docker `--privileged`, `-v /var/run/docker.sock`, `--network host`, `--user root`, `--pid host` or credential environment passthrough.
-- Trusting target CI workflows as Peeky controller policy.
-- Using `pip install -e .` directly on host for a target repository.
+Credential filename checks and pattern-based redaction are not complete secret discovery. Raw streams are not persisted by Peeky/container logging, but arbitrary secret formats can evade patterns. Local HMAC is not an independent public execution attestation and does not resist an operator with key access. Protect per-user controller state separately from scanned repos and shared reports. Crash-resumable/intermediate journaling remains unimplemented.
+
+Online dependency installation/prefetch from target README remains deferred. The one separately reviewed official image preparation is not permission to fetch arbitrary packages or expand runtime egress. Models, docs patch validation, clean retest and matched agent benchmarks remain later phases; their injection/permission gates must be verified before enabling those features. CI execution and additional platforms must be recorded as actually observed, never inferred from workflow edits.
+
+## Prohibited shortcuts
+
+- No host target execution or `shell=True` fallback.
+- No privileged Docker, Docker socket, host network/PID namespace, root user, credential passthrough, mutable host source mounts or broad container pruning.
+- No target CI/README/AGENTS/model content controlling permissions, evidence verdicts, budgets, image trust or cleanup ownership.
+- No host `pip install` for a scanned target and no automatic dependency fetch while auditing.

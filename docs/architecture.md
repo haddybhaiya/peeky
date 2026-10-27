@@ -36,9 +36,10 @@ Repository snapshot + README parser ----> Reviewable step plan
 - `sources.py`: bounded verified Git object reads, clean scoped source identity and temporary read-only exports; no target checkout/hooks/filters/imports.
 - `domain.py`: frozen source/policy identities, canonical plan hashes and controller-owned run transitions.
 - `policy.py`: trusted allowlist and no shell metacharacters, independent of model.
-- `runner.py`: only Docker command producer, no shell on host; target code runs inside containers.
-- `evidence.py`: deterministic reducer and write-once records; no model authority over success verdicts.
-- `passport.py`: drafts source/commit/policy/plan-bound candidate guidance after internally consistent schema 1.1 checks; the CLI refuses overwrite of existing output. JSON authentication and independent execution proof remain later work.
+- `runner.py`: snapshot-only, digest-allowlisted Docker create/attach/inspect/owned-cleanup controller; target code runs only in restricted containers with bounded/redacted streams.
+- `evidence.py`: deterministic reducer, observed coverage, redacted log hashes and atomic exclusive records; no model authority over success verdicts.
+- `images.py`, `redaction.py`, `provenance.py`: reviewed digest allowlist, bounded collection/storage redaction and private per-user controller HMAC integrity.
+- `passport.py`: drafts source/commit/policy/plan-bound candidate guidance only after schema 1.2 local authentication and complete runtime-evidence checks; existing output is never overwritten. Public third-party attestation and clean repair/retest assurance remain later work.
 - **To implement:** `providers/` typed open-model adapters; `repair.py` candidate patch validation; `benchmark.py` fixed-task agent harness; `reports.py` rich exported Markdown.
 
 ## State machine
@@ -49,7 +50,7 @@ Phase 1 implements the controller transitions through INSPECTED, APPROVED, SANDB
 
 ## Environment comparisons
 
-Record exact target revision, README hash, Git dirty state, image identity **resolved digest**, commands, environment assumptions, runtime mode and evidence SHA for every comparison. Never compare altered setup environments as causal proof. `python:3.12-slim` is only scaffold convenience; pin immutable image in implementation and CI.
+Record exact target revision, README hash, Git dirty state, resolved image digest/ID, commands, policy, isolation, runtime mode and evidence SHA for every comparison. Phase 2 enforces a reviewed cached digest in execution and CI setup, measures effective container constraints and records actual State/start/end/duration. It supports one command per audit; multi-step installation comparisons are unsupported. Never compare altered setup environments as causal proof. Local fixture results are not generalized benchmark evidence.
 
 ## Interface contracts (proposed)
 
@@ -66,4 +67,4 @@ class AgentHarness(Protocol):
 
 ## Storage
 
-Default local `.peeky/runs/<uuid>.json` relative to CLI's current working directory. Source exports are separate short-lived temporary directories, removed after capture/use. Schema 1.1 includes sorted file hashes and run/policy/plan identity, not file bodies or Git metadata. Future safe evidence storage should add a dedicated state root, atomic finalization and authenticated manifests. Do not include tokens, raw .env, SSH keys, hidden credential folders, auth headers, or sensitive full source in reports.
+Default report storage is local `.peeky/runs/<uuid>.json` relative to the CLI working directory. Source exports are separate short-lived temporary directories, removed after use. Schema 1.2 includes sorted file hashes, run/policy/plan identity, actual runtime provenance and bounded redacted transcripts, not source bodies or Git metadata. Authenticated records are finalized atomically/exclusively. The private HMAC key is per-user state outside scanned repositories: `%LOCALAPPDATA%/Peeky/controller.key` on Windows or `~/.local/state/Peeky/controller.key` on Linux. It is never taken from evidence or mounted in a container. Public-key attestation and durable intermediate/crash journaling remain unimplemented. See `phase2-runner.md`.

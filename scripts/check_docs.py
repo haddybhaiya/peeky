@@ -19,6 +19,7 @@ REQUIRED = [
     "docs/assumptions.md",
     "docs/decisions.md",
     "docs/source-capture.md",
+    "docs/phase2-runner.md",
 ]
 
 

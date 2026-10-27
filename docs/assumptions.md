@@ -1,7 +1,7 @@
 # Assumptions and checks
 
-- A-01: Candidate user has Docker on a suitable isolated host. **Local Docker daemon is unavailable; the owner deferred the two Docker tests on 2026-10-27. Phase 2 integration remains unverified; test on CI and another laptop.**
-- A-02: Python image can execute selected offline fixture commands. **Test required.**
+- A-01: Candidate user has Docker on a suitable host. **On 2026-10-27 the owner enabled Docker; local Linux Docker Engine 29.1.3 completed the real integration gate. This does not establish suitability for unknown hostile repositories or a second-machine/CI result.**
+- A-02: Python image can execute selected offline fixture commands. **Verified locally with the reviewed pinned official Python digest: good PASS, bad FAIL, no-op INCONCLUSIVE; authenticated redacted records retained.**
 - A-03: README annotations are acceptable for initial adopter and demo. **Likely friction; compare manual plan later.**
 - A-04: Open-weight coding provider fits model credits/budget. **Provider pricing, tokens, uptime TBD.**
 - A-05: A controlled cold-start agent can access policy-restricted Docker tools. **Harness integration not implemented.**
@@ -9,7 +9,9 @@
 - A-07: Live demonstration can be silent/captioned. **Organizer not explicitly requiring voiceover according to Town Hall.**
 - A-08: Submission timing: Town Hall indicates Tuesday evening while public Luma lists Oct 27 8 PM build end and 10 PM form close. **Confirm; don't assume an eight-hour grace period.**
 - A-09: The chosen project, Python package and CLI name is `peeky` (display name `Peeky`). **Confirmed by the owner on 2026-10-27; PyPI availability and trademark clearance remain unchecked. No publication is authorized by this rename.**
-- A-10: Docker CLI options work on target CI host and kernel. **Real integration required; no mocked assurance.**
+- A-10: Docker CLI options work on the host/kernel. **Locally verified by inspected config, actual cgroup/UID/capability/filesystem/network checks and real OOM/timeout/log-budget cases. CI and other platforms remain unobserved.**
 - A-11: The declared development group can be resolved and installed reproducibly. **Validated locally on Python 3.13.7 with pytest 9.1.1, Ruff 0.16.10 and mypy 2.4.0; `uv.lock` generated and `uv sync --locked --offline` succeeded. Python 3.12/Linux CI remains unexecuted locally.**
 - A-12: A committed selected Git directory is a usable MVP source boundary. **Phase 1 validated scoped index/worktree consistency, original Git-byte exports, UTF-8 CRLF checkout normalization, SHA-1/SHA-256 Git identities, symlink/submodule/junction and traversal denial, and independent-process identity equality. Custom filters, LFS checkouts, bare/linked worktrees and hostile concurrent host filesystem mutation remain unsupported or outside the assurance boundary.**
-- A-13: Source-bound JSON can serve as candidate guidance input. **Consistency and source-change rejection are tested, but JSON is unsigned and is not independent execution proof. Full verified passport claims remain gated on later authenticated execution/retest work.**
+- A-13: Source-bound JSON can serve as candidate guidance input. **Schema 1.2 now has tested local HMAC integrity, runtime metadata and source-change rejection. It is not a public signature, proof against a compromised key owner, or clean docs-repair/retest assurance.**
+- A-14: A single offline smoke command is sufficient for the Phase 2 fixture gate. **Validated; multi-command plans are explicitly blocked rather than silently split into unrelated environments. Stateful setup and dependency installation remain unsupported.**
+- A-15: Controller state/tool discovery remains independent of target material. **The HMAC key is per-user state outside scanned repos; tracked controller keys/state are denied, host-tool lookup excludes cwd/target paths, Docker proxy defaults are cleared and effective environment is checked before start. Trusted host operator/tool installations remain assumptions.**

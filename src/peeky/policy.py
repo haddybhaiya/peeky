@@ -47,3 +47,10 @@ def validate_image(image: str) -> str:
     ):
         raise PolicyError("Only python:TAG or python@sha256:FULL_DIGEST is accepted")
     return image
+
+
+def validate_run_image(image: str) -> str:
+    validate_image(image)
+    if image not in DEFAULT_POLICY.approved_images:
+        raise PolicyError("Execution requires a reviewed, cached official Python digest")
+    return image

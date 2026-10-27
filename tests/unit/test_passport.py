@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from peeky.passport import PassportError, make_passport
+from peeky.provenance import authenticate
 
 pytestmark = pytest.mark.unit
 
@@ -69,6 +70,15 @@ def test_inconsistent_evidence_never_creates_passport(
         payload["execution"] = "model-said-so"
     else:
         payload["run"]["history"] = ["CREATED", "FINALIZED"]
-    evidence_file.write_text(json.dumps(payload), encoding="utf-8")
+    # Re-authenticate to test semantic validation independently of the MAC check.
+    evidence_file.write_text(json.dumps(authenticate(payload)), encoding="utf-8")
     with pytest.raises(PassportError):
+        make_passport(repo, evidence_file)
+
+
+def test_unauthenticated_tamper_rejected(repo: Path, evidence_file: Path) -> None:
+    payload = json.loads(evidence_file.read_text(encoding="utf-8"))
+    payload["results"][0]["stdout"] = "tampered"
+    evidence_file.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(PassportError, match="authentication"):
         make_passport(repo, evidence_file)
