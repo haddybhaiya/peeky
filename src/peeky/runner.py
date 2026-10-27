@@ -7,10 +7,11 @@ import subprocess
 import time
 from pathlib import Path
 
+from .domain import DEFAULT_POLICY
 from .models import Step, StepResult
 from .policy import PolicyError, safe_argv, validate_image
 
-MAX_CAPTURE = 5000
+MAX_CAPTURE = DEFAULT_POLICY.max_capture_chars
 
 
 def doctor() -> dict[str, object]:
@@ -43,14 +44,14 @@ def execute(step: Step, repo: Path, image: str, timeout: int = 20) -> StepResult
         "run",
         "--rm",
         "--pull=never",
-        "--network=none",
+        f"--network={DEFAULT_POLICY.network}",
         "--read-only",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges",
-        "--pids-limit=64",
-        "--memory=256m",
-        "--cpus=1",
-        "--user=65534:65534",
+        f"--pids-limit={DEFAULT_POLICY.pids_limit}",
+        f"--memory={DEFAULT_POLICY.memory}",
+        f"--cpus={DEFAULT_POLICY.cpus}",
+        f"--user={DEFAULT_POLICY.user}",
         "--tmpfs",
         "/tmp:rw,nosuid,nodev,size=32m",
         "--mount",

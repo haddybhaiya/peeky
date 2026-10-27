@@ -18,6 +18,7 @@ REQUIRED = [
     "docs/work_review.md",
     "docs/assumptions.md",
     "docs/decisions.md",
+    "docs/source-capture.md",
 ]
 
 

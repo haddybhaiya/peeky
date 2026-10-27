@@ -5,14 +5,17 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 from . import __version__
+from .domain import DEFAULT_POLICY, RunRecord, RunState
 from .evidence import report, write_report
 from .parser import ParseError, read_steps
 from .passport import PassportError, make_passport
 from .policy import PolicyError, safe_argv, validate_image
 from .runner import doctor, execute
+from .sources import safe_root, snapshot
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,24 +50,13 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(status, sort_keys=True) if args.json else f"Docker: {status}")
             return 0 if status["docker_daemon"] else 3
         if args.command == "passport":
-            contents = make_passport(args.repo.resolve(strict=True), args.evidence)
+            contents = make_passport(args.repo, args.evidence)
             if args.output.exists():
                 raise PassportError("Refusing to overwrite an existing passport")
-            args.output.write_text(contents, encoding="utf-8")
+            with args.output.open("x", encoding="utf-8") as output:
+                output.write(contents)
             print(args.output)
             return 0
-        repo = args.repo.resolve(strict=True)
-        steps = read_steps(repo)
-        for step in steps:
-            safe_argv(step.command)
-        if args.command == "inspect":
-            if args.json:
-                print(json.dumps([s.__dict__ for s in steps], indent=2))
-            else:
-                print(f"Proposed steps: {len(steps)} (never executed)")
-                for s in steps:
-                    print(f"{s.id} README:{s.line}: {s.command}")
-            return 0 if steps else 2
         if args.command == "audit":
             validate_image(args.image)
             if not args.approve:
@@ -73,20 +65,65 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
+        repo = safe_root(args.repo)
+        with snapshot(repo) as captured:
+            steps = read_steps(captured.path)
+            for step in steps:
+                safe_argv(step.command)
+            run = RunRecord(captured.identity, tuple(steps))
+            run.advance(RunState.INSPECTED)
+            if args.command == "inspect":
+                if args.json:
+                    print(
+                        json.dumps(
+                            {
+                                "schema_version": "1.1",
+                                "source": asdict(captured.identity),
+                                "policy_sha256": DEFAULT_POLICY.sha256,
+                                "run": run.dict(),
+                                "steps": [asdict(s) for s in steps],
+                            },
+                            indent=2,
+                        )
+                    )
+                else:
+                    print(
+                        f"Source: {captured.identity.git_commit} {captured.identity.source_sha256}"
+                    )
+                    print(f"Plan: {run.dict()['plan_sha256']}")
+                    print(f"Proposed steps: {len(steps)} (never executed)")
+                    for s in steps:
+                        print(f"{s.id} README:{s.line}: {s.command}")
+                return 0 if steps else 2
             if not steps:
                 print("No opted-in `bash peeky` steps; no execution.", file=sys.stderr)
                 return 2
+            run.advance(RunState.APPROVED)
             if not doctor()["docker_daemon"]:
+                run.advance(RunState.BLOCKED)
+                data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
+                data["reason"] = "Docker daemon unavailable; no target execution"
+                print(f"Evidence: {write_report(data, args.output)}")
                 print("Docker daemon unavailable; refusing host execution.", file=sys.stderr)
                 return 3
+            run.advance(RunState.SANDBOX_RUN)
             results = []
             for step in steps:
-                result = execute(step, repo, args.image)
+                captured.verify()
+                result = execute(
+                    step, captured.path, args.image, timeout=DEFAULT_POLICY.command_timeout_seconds
+                )
                 results.append(result)
                 print(f"{step.id}: {result.outcome}")
                 if result.outcome != "PASS":
                     break
-            path = write_report(report(repo, args.image, steps, results), args.output)
+            captured.verify()
+            run.advance(RunState.OBSERVED)
+            run.advance(RunState.FINALIZED)
+            path = write_report(
+                report(repo, args.image, steps, results, captured.identity, run, DEFAULT_POLICY),
+                args.output,
+            )
             print(f"Evidence: {path}")
             return (
                 0 if len(results) == len(steps) and all(r.outcome == "PASS" for r in results) else 1
