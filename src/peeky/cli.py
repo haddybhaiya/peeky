@@ -58,6 +58,15 @@ def build_parser() -> argparse.ArgumentParser:
     recheck.add_argument("--approve-proposal", required=True)
     recheck.add_argument("--output", type=Path, default=Path(".peeky/repairs/rechecks"))
     recheck.add_argument("--state", type=Path, default=Path(".peeky/repair-attempts"))
+    trial = commands.add_parser("trial", help="Run one matched restricted fresh-agent pair")
+    trial.add_argument("repo", type=Path)
+    trial.add_argument("--evidence", type=Path, required=True)
+    trial.add_argument("--expected-command", required=True)
+    trial.add_argument("--expected-stdout", required=True)
+    trial.add_argument("--approve", action="store_true")
+    trial.add_argument("--model-consent", action="store_true")
+    trial.add_argument("--env-file", type=Path)
+    trial.add_argument("--output", type=Path, default=Path(".peeky/trials"))
     return parser
 
 
@@ -65,6 +74,26 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "trial":
+            if not args.approve or not args.model_consent:
+                print("Trial requires --approve and --model-consent.", file=sys.stderr)
+                return 2
+            from .benchmark import run_pair
+            from .providers.openai_compatible import load_config
+            from .repair import FrozenOracle
+
+            path = run_pair(
+                args.repo,
+                args.evidence,
+                FrozenOracle(args.expected_command, args.expected_stdout),
+                load_config(args.env_file),
+                args.output,
+                consent=True,
+                approve=True,
+            )
+            print(f"Paired evidence: {path}")
+            print(f"Report: {args.output / 'paired-report.md'}")
+            return 0
         if args.command in {"diagnose", "recheck"}:
             from .providers.openai_compatible import load_config
             from .repair import FrozenOracle, diagnose, load_record, recheck
@@ -104,6 +133,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(status, sort_keys=True) if args.json else f"Docker: {status}")
             return 0 if status["docker_daemon"] and status.get("linux") else 3
         if args.command == "passport":
+            if args.output.name != "AGENTS.generated.md":
+                raise PassportError("Passport output must be AGENTS.generated.md; never AGENTS.md")
             contents = make_passport(args.repo, args.evidence)
             if args.output.exists():
                 raise PassportError("Refusing to overwrite an existing passport")
