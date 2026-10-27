@@ -40,7 +40,9 @@ Repository snapshot + README parser ----> Reviewable step plan
 - `evidence.py`: deterministic reducer, observed coverage, redacted log hashes and atomic exclusive records; no model authority over success verdicts.
 - `images.py`, `redaction.py`, `provenance.py`: reviewed digest allowlist, bounded collection/storage redaction and private per-user controller HMAC integrity.
 - `passport.py`: drafts source/commit/policy/plan-bound candidate guidance only after schema 1.2 local authentication and complete runtime-evidence checks; existing output is never overwritten. Public third-party attestation and clean repair/retest assurance remain later work.
-- **To implement:** `providers/` typed open-model adapters; `repair.py` candidate patch validation; `benchmark.py` fixed-task agent harness; `reports.py` rich exported Markdown.
+- `providers/openai_compatible.py`: one opt-in BYOK Gemma Chat Completions adapter, bounded redacted context, strict proposals and model/version/usage/cost provenance; no tools/retries/verdict authority.
+- `repair.py`: authenticated baseline, frozen operator oracle, exact README command-line diff, digest-bound human approval, persistent attempt claims and fresh baseline/candidate Docker comparison. Derived source has a genuine temporary Git revision; target files/index are never patched.
+- **To implement:** `benchmark.py` fixed-task agent harness; `reports.py` rich exported Markdown. Phase 3 live/human gates must be recorded separately from mocked-model Docker checks.
 
 ## State machine
 

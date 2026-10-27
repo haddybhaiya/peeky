@@ -15,3 +15,10 @@ Passport validation checks local authentication, full current source/commit/poli
 **Before final MVP extend:** clean-retest/patch identities and attempt budgets, provider opt-in/model metadata, independent agent A/B trial manifests and readable Markdown export. Durable intermediate/crashed-attempt journals and public-verifiable attestations remain unimplemented. Do not mutate finalized records, erase blocked/failed attempts, or treat workflow files as observed CI success.
 
 **Success claim levels:** one observed offline `SMOKE_PASS` is not complete installation `ONBOARDING_PASS`, an independently observed `AGENT_COLD_START_PASS`, or generalized reproducibility. The latter is never claimed by this MVP.
+
+
+## Phase 3 records
+
+`repair-proposal-1` records preserve the authenticated baseline/source/policy/image, frozen operator oracle, bounded redacted provider request/response/error, requested/observed model, checkpoint/version, usage/cost basis and exact candidate README hash. They have no execution verdict; PROPOSED only means a permitted candidate awaits human review. `approval_digest` binds the sanitized complete proposal excluding its integrity/digest fields. A returned model field cannot confer approval or verified status.
+
+`repair-recheck-1` binds that approval to fresh original and derived-candidate schema 1.2 runs, original source, independent oracle and unchanged non-README hashes/modes. Only the controller records VERIFIED after baseline FAIL, candidate PASS, matching image ID, distinct containers, cleanup and exact marker. Records use the existing private-key HMAC and exclusive atomic writer. Missing provider response means unknown usage/cost and an INCONCLUSIVE live attempt. Local authentication is not public attestation. A temporary candidate cannot create a passport for the untouched target; Phase 4 integration remains separate.
