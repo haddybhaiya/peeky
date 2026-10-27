@@ -1,4 +1,6 @@
-# Captioned demo, no voiceover needed unless organizer clarifies
+# Demo video: completed; recording plan retained
+
+**Completion:** The project owner confirms the demo video and OpenFire submission are complete. The plan below is retained as preparation history, not a claim about independently measured final duration or content. No video URL has been supplied.
 
 90–120 seconds captured using OBS, ShareX, or native screen recording. Use edited text captions only.
 
@@ -13,7 +15,7 @@ Avoid overly fast terminal playback that hides actual observed commands. Display
 
 ## Final retained-evidence recording plan
 
-Use 105 seconds with captions and no voiceover. This is a plan, not an existing recording. Label all historical material "retained authenticated evidence"; do not imply a new live model call.
+Historical plan: use 105 seconds with captions and no voiceover. The owner has since completed the actual recording; its duration has not been independently checked. Label all historical material "retained authenticated evidence"; do not imply a new live model call.
 
 | Time | Show | Caption |
 |---|---|---|
@@ -24,4 +26,4 @@ Use 105 seconds with captions and no voiceover. This is a plan, not an existing 
 | 65?90s | Retained Phase 4 report with every attempt | Baseline 0/2, passport 1/2; three HTTP 500 errors; 0/2 comparable pairs; no improvement claim |
 | 90?105s | Phase 5 summary, architecture and limits | Local HMAC is not public attestation; model billing/hosted revision unknown |
 
-Capture an actual screen recording and review every caption against source evidence. No video is claimed until that file exists and duration/content are checked. Public organizer rules now say Alan + open models, conflicting with the earlier optional-Alan Town Hall note; see phase5-review.md before submission.
+The actual recording and submission are now owner-confirmed complete. The caption/evidence checks above remain the recording guidance; the controller has not independently inspected the final video. Earlier eligibility questions are documented in phase5-review.md as preparation history.

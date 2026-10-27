@@ -284,3 +284,23 @@
 **Next task:** record/review the prepared 105-second demonstration, resolve the current Alan rule with the organizer, and separately authorize any Phase 5 commit/push, PR or actual submission. No additional provider retries or unrequested publication.
 
 **Final export integrity:** both actual report JSON/Markdown hashes verified. All 87 public manifest hashes and clean public-export required docs passed; configured key absent. Final wheel matches all 20 source modules and README metadata. A local public-source ZIP contains only the 87 explicitly listed public files plus KIT_MANIFEST.json; every entry was byte-checked against source. Its SHA256 is stored in ignored `.peeky/phase5-validation/artifacts.json`. No env, private controller key, retained private logs or review archive is in that source ZIP. Phase 5 actual-video/eligibility gates remain OPEN.
+
+## Owner-confirmed demo and submission completion
+
+**Changed:** the owner states that the demo video, all remaining submission work and the OpenFire submission are complete. Updated README, phase tracker, Phase 5 review, demo history, requirements mapping, test plan and assumptions accordingly. Phase 5 delivery is now COMPLETED with owner-reported external completion. Earlier missing-video/OPEN entries remain historical checkpoints, not current blockers. Phase 5 implementation was committed and pushed as `8546d84` after the preceding review entry.
+
+**Evidence boundary:** the owner's completion statement is the source for video/submission status. No video URL or receipt was supplied, and final duration/content and organizer acceptance were not independently inspected. No new verification, eligibility adjudication, publication or links are invented. The unchanged last technical gate is 204 passed, 1 live deselected, 0 skips. Phase 4 comparison stays INCONCLUSIVE: baseline 0/2, passport 1/2, three provider errors and 0/2 comparable pairs.
+
+**Validation:** documentation reference checks, exact public-manifest hashes and whitespace checks are run for this documentation-only change. Runtime tests are not rerun because application behavior is unchanged. Historical wheel/source bundles describe their earlier snapshots and are not relabeled current builds.
+
+**Phase gate / next task:** project delivery complete per owner confirmation; await submission feedback. No additional implementation phase, commit or push is included in this request.
+
+## Owner-authorized paired retry and README API-error wording
+
+**Actual retry:** the owner requested one additional complete baseline/passport pair. To preserve original source identity after subsequent commits, created an isolated no-checkout local Git clone under `.peeky/phase4-manual-retry-b51f10fcfd/original-source`, reset metadata to the original revision and materialized only the reviewed fixture bytes. Hooks and fsmonitor were disabled for setup; no target code ran on the host. An initial offline preflight assertion omitted the `sha256:` prefix and stopped before any provider call; corrected that local assertion and resumed the same reserved attempt. Exact original source identity, image ID, requested model, passport guidance, task, tool schemas, oracle and budgets matched before dispatch.
+
+Both actual requests returned Google HTTP 500, each with one model call, zero tool calls and no target execution. Signed pair: `.peeky/phase4-manual-retry-b51f10fcfd/pairs/8b843117985f407cb3db7e6290e3fa81.json`; original per-arm traces and readable report remain alongside it. This is an additional explicit retry after the original two-pair study, not a rewrite of its sample plan or original signed aggregate. No further requests were made. Cumulative attempts: three pairs / six arms; five provider HTTP 500 errors; baseline zero completed checks in three attempts, passport one actual PASS in three attempts; zero fully observed comparable pairs. Exact provider root cause and failed-call usage remain unknown.
+
+**README wording:** at the owner's request, removed the word inconclusive from the README and describe the benchmark as blocked by provider API errors. The original records and controller status semantics remain unchanged. README retains all attempted-call denominators, the genuine successful execution and the absence of a supported improvement estimate. General incomplete-check guidance now uses plain language; it still forbids counting incomplete work as PASS. Demo/submission completion remains owner-confirmed.
+
+**Validation:** documentation checks, public-manifest hashes and whitespace checks; no application changes or new runtime tests. No commit or push requested in this turn.
