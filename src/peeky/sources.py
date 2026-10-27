@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-import shutil
 import stat
 import subprocess
 import tempfile
@@ -16,6 +15,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 
 from .domain import DEFAULT_POLICY, RunPolicy, SourceFile, SourceIdentity, canonical_hash
+from .hosttools import host_tool
 
 
 class SourceError(ValueError):
@@ -93,7 +93,7 @@ def read_regular(root: Path, name: str, limit: int) -> bytes:
 
 
 def _git(root: Path, policy: RunPolicy, *args: str, limit: int | None = None) -> bytes:
-    binary = shutil.which("git")
+    binary = host_tool("git", avoid=root)
     if binary is None:
         raise SourceError("Git is required for immutable source capture")
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
@@ -211,8 +211,8 @@ def _equivalent(worktree: bytes, committed: bytes) -> bool:
 def _secret_path(path: str) -> bool:
     parts = PurePosixPath(path).parts
     return any(
-        part.casefold() in {".git", ".ssh", ".aws", ".azure", ".gnupg"}
-        or part.casefold() in {"id_rsa", "id_ed25519"}
+        part.casefold() in {".git", ".ssh", ".aws", ".azure", ".gnupg", ".peeky", ".freshstart"}
+        or part.casefold() in {"id_rsa", "id_ed25519", "controller.key"}
         or (
             part.casefold().startswith(".env")
             and part.casefold() not in {".env.example", ".env.template"}
@@ -315,12 +315,19 @@ def fingerprint(repo: Path, policy: RunPolicy = DEFAULT_POLICY) -> SourceIdentit
     return _capture(repo, policy)[0]
 
 
+_EXPORT_TOKEN = object()
+
+
 @dataclass(frozen=True)
 class SourceSnapshot:
     path: Path
     identity: SourceIdentity
+    _token: object | None = None
+    _origin: Path | None = None
 
     def verify(self, policy: RunPolicy = DEFAULT_POLICY) -> None:
+        if self._token is not _EXPORT_TOKEN:
+            raise SourceError("Only controller-created source exports are accepted")
         safe_root(self.path)
         for path in self.path.rglob("*"):
             if _linked(path.lstat()):
@@ -346,7 +353,7 @@ def snapshot(repo: Path, policy: RunPolicy = DEFAULT_POLICY) -> Iterator[SourceS
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(contents[item.path])
             target.chmod(0o555 if item.mode == "100755" else 0o444)
-        captured = SourceSnapshot(exported, identity)
+        captured = SourceSnapshot(exported, identity, _EXPORT_TOKEN, _repo_root(safe_root(repo)))
         captured.verify(policy)
         for directory in sorted(
             (p for p in exported.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True
