@@ -28,5 +28,17 @@ def test_approved_argv() -> None:
 @pytest.mark.unit
 def test_image_policy() -> None:
     assert validate_image("python:3.12-slim") == "python:3.12-slim"
+    pinned = "python@sha256:" + "a" * 64
+    assert validate_image(pinned) == pinned
     with pytest.raises(PolicyError):
         validate_image("--privileged")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "image",
+    ["python:5000/other", "python:3.12/slim", "python@sha256:short", "python:tag@sha256:bad"],
+)
+def test_T004_image_namespace_and_digest_syntax_fail_closed(image: str) -> None:
+    with pytest.raises(PolicyError):
+        validate_image(image)
