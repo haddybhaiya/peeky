@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import subprocess
@@ -12,9 +13,17 @@ import pytest
 
 from peeky.domain import DEFAULT_POLICY, RunRecord, RunState
 from peeky.evidence import report, write_report
+from peeky.images import DEFAULT_IMAGE
 from peeky.models import StepResult
 from peeky.parser import read_steps
 from peeky.sources import fingerprint
+
+
+@pytest.fixture(autouse=True)
+def controller_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "peeky.provenance.DEFAULT_KEY_FILE", tmp_path / "controller" / "evidence.key"
+    )
 
 
 @pytest.fixture
@@ -81,9 +90,31 @@ def evidence_file(repo: Path, tmp_path: Path) -> Path:
     ):
         run.advance(state)
     results = [
-        StepResult(s.id, s.command, 0, "synthetic unit result", "", "PASS", 1) for s in steps
+        StepResult(
+            s.id,
+            s.command,
+            0,
+            "synthetic unit result",
+            "",
+            "PASS",
+            1,
+            "SYNTHETIC_UNIT_RESULT",
+            {
+                "source_sha256": source.source_sha256,
+                "policy_sha256": DEFAULT_POLICY.sha256,
+                "image_digest": DEFAULT_IMAGE,
+                "image_id": "synthetic-image-not-real-execution",
+                "container_id": "synthetic-container",
+                "target_started": True,
+                "logs_complete": True,
+                "cleanup_verified": True,
+                "stdout_sha256": hashlib.sha256(b"synthetic unit result").hexdigest(),
+                "stderr_sha256": hashlib.sha256(b"").hexdigest(),
+            },
+        )
+        for s in steps
     ]
     return write_report(
-        report(repo, "python:3.12-slim", steps, results, source, run, DEFAULT_POLICY),
+        report(repo, DEFAULT_IMAGE, steps, results, source, run, DEFAULT_POLICY),
         tmp_path / "evidence",
     )
