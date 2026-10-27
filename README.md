@@ -2,7 +2,7 @@
 
 **Product hypothesis:** A repository should be demonstrably installable for a first-time human and bootstrappable for a fresh coding agent, not merely documented as such.
 
-**Status:** Development MVP with restricted Docker audits, opt-in BYOK Gemma README repair, authenticated candidate passports and a native-tool onboarding harness. Phase 3's genuine proposal and human-approved fresh Docker recheck passed; corrected prerequisite CI succeeded. Phase 4's live report is **INCONCLUSIVE**: baseline 0/2 PASS, passport 1/2 PASS, three provider errors and 0/2 comparable pairs. Phase 5 adds evidence summary exports and local review; the actual demo video and organizer eligibility confirmation remain outstanding. This is **not a completed OpenFire submission**. See [work review](docs/work_review.md) and [final review](docs/phase5-review.md).
+**Status:** Development MVP with restricted Docker audits, opt-in BYOK Gemma README repair, authenticated candidate passports and a native-tool onboarding harness. Phase 3's genuine proposal and human-approved fresh Docker recheck passed; corrected prerequisite CI succeeded. Phase 4's live comparison is **blocked by provider API errors**: five of six Gemma requests returned HTTP 500 before tool execution. One passport-assisted attempt completed the real Docker check successfully; no complete matched pair is available. Phase 5's reports, documentation and local checks are complete. **The demo video and OpenFire submission are complete, as confirmed by the project owner.** Submission completion does not change the recorded benchmark outcome. See [work review](docs/work_review.md) and [final review](docs/phase5-review.md).
 
 This kit borrows the **documentation-first engineering discipline** of `haddybhaiya/recheck-`: same general Hatchling/pytest/ruff/mypy `pyproject.toml` pattern, phase-gated implementation, explicit safety boundaries, credential-free checks and auditable evidence. It does not copy Recheck's domain logic.
 
@@ -17,7 +17,7 @@ uv run --locked peeky audit tests/fixtures/outdated_repo --approve
 uv run --locked peeky diagnose tests/fixtures/outdated_repo --evidence PATH_TO_FAILED_RECORD --expected-command "python repair_smoke.py" --expected-stdout PEEKY_RECHECK_OK --model-consent --env-file .env
 ```
 
-Review the returned README-only diff and exact approval digest. Only then run `peeky recheck TARGET --proposal PATH_TO_PROPOSAL --approve-proposal sha256:DIGEST`. This runs the unchanged baseline and approved candidate in separate fresh restricted containers; it never patches the target worktree. Only the controller's frozen command/marker oracle can record VERIFIED. A model cannot declare verified status. Missing completions, quota errors and uncertain execution remain INCONCLUSIVE; missing free-tier usage/cost alone is recorded as unknown without blocking a valid proposal. See [the complete repair contract](docs/phase3-repair.md) for limits, cost accounting and one-attempt budgets.
+Review the returned README-only diff and exact approval digest. Only then run `peeky recheck TARGET --proposal PATH_TO_PROPOSAL --approve-proposal sha256:DIGEST`. This runs the unchanged baseline and approved candidate in separate fresh restricted containers; it never patches the target worktree. Only the controller's frozen command/marker oracle can record VERIFIED. A model cannot declare verified status. Provider errors and incomplete execution are recorded separately from target failures; missing free-tier usage/cost alone is recorded as unknown without blocking a valid proposal. See [the complete repair contract](docs/phase3-repair.md) for limits, cost accounting and one-attempt budgets.
 
 ## Quick start
 
@@ -38,7 +38,7 @@ peeky audit tests/fixtures/good_repo --approve
 peeky passport tests/fixtures/good_repo --evidence .peeky/runs/REPLACE_WITH_RUN_ID.json
 ```
 
-The `audit` command creates schema 1.2 evidence JSON in `.peeky/runs/`. It accepts exactly one opted-in smoke command, captures committed Git bytes into a verified read-only export, and executes inside a fresh restricted container using the reviewed cached digest. It does **not** rewrite your repository, use an LLM, install dependencies, pull images or enable target networking. Missing Docker, no annotated commands and unsupported multi-step plans preserve BLOCKED/INCONCLUSIVE evidence. Actual target failures are FAIL; timeout, output/memory limits and ambiguous infrastructure are INCONCLUSIVE. Full observed stdout/stderr are retained after redaction within explicit byte budgets, with image/source/policy IDs and verified cleanup. Evidence has local HMAC integrity under `%LOCALAPPDATA%/Peeky/controller.key` on Windows (or `~/.local/state/Peeky/controller.key` on Linux); keep this private controller state out of shared evidence bundles. See [the runner contract](docs/phase2-runner.md).
+The `audit` command creates schema 1.2 evidence JSON in `.peeky/runs/`. It accepts exactly one opted-in smoke command, captures committed Git bytes into a verified read-only export, and executes inside a fresh restricted container using the reviewed cached digest. It does **not** rewrite your repository, use an LLM, install dependencies, pull images or enable target networking. Missing Docker, no annotated commands and unsupported multi-step plans preserve blocked or unverified evidence. Actual target failures are FAIL; timeouts, output/memory limits and ambiguous infrastructure do not establish a target verdict. Full observed stdout/stderr are retained after redaction within explicit byte budgets, with image/source/policy IDs and verified cleanup. Evidence has local HMAC integrity under `%LOCALAPPDATA%/Peeky/controller.key` on Windows (or `~/.local/state/Peeky/controller.key` on Linux); keep this private controller state out of shared evidence bundles. See [the runner contract](docs/phase2-runner.md).
 
 For contributors:
 
@@ -89,7 +89,7 @@ python smoke.py
 
 ## Important notes
 
-- An incomplete setup check is `INCONCLUSIVE`, **not** `PASS`.
+- An incomplete setup check is never counted as `PASS`.
 - One passed smoke test is not proof that all installation workflows function.
 - The agent benchmark must run on the same immutable revision, runner, model and budgets on both sides.
 - Existing AGENTS.md is never overwritten by this package.
@@ -107,7 +107,7 @@ uv run --locked peeky trial tests/fixtures/good_repo --evidence PATH_TO_AUDIT.js
 
 Use the existing ignored Gemma BYOK configuration. Each arm gets a fresh conversation and source capture with the same model, image, task and budgets; only passport guidance differs. Native tools can read bounded captured files or request the approved command in fresh offline Docker. The independent controller judges execution. No installation, host target execution or GitHub writes.
 
-Actual local report: baseline **0/2 PASS**, passport **1/2 PASS**, three provider HTTP 500 errors, **0/2 comparable pairs**. All failures are retained; no improvement estimate is claimed. See [the Phase 4 protocol and evidence paths](docs/phase4-onboarding.md). This is an implemented harness with an inconclusive live comparison, not completion of the whole MVP.
+**Provider API availability:** Across three complete pair attempts, five of six Google Gemma calls returned HTTP 500 before any tool or Docker execution. The remaining passport-assisted call used the native tool and passed the independent fresh-Docker check. Baseline: **0 completed checks / 3 attempts**; passport: **1 PASS / 3 attempts**; fully observed matched pairs: **0/3**. These API errors are separate from target-code failures. Both original pairs and the owner-authorized retry are retained; no onboarding improvement estimate is claimed. See [the Phase 4 protocol and original evidence](docs/phase4-onboarding.md) and [the retry record in work review](docs/work_review.md).
 
 
 ## Export a readable evidence summary
@@ -116,4 +116,4 @@ Actual local report: baseline **0/2 PASS**, passport **1/2 PASS**, three provide
 uv run --locked peeky report --evidence PATH_TO_AUDIT.json --evidence PATH_TO_STUDY.json --output .peeky/review-export
 ```
 
-This validates local record authentication and writes JSON plus Markdown into a new directory. It makes no model request or target execution; incomplete evidence stays inconclusive. Original redacted logs remain private. See [Phase 5 review and remaining gates](docs/phase5-review.md).
+This validates local record authentication and writes JSON plus Markdown into a new directory. It makes no model request or target execution; incomplete evidence is never promoted to PASS. Original redacted logs remain private. See [Phase 5 review and submission completion](docs/phase5-review.md).

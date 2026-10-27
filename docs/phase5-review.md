@@ -1,6 +1,6 @@
-# Phase 5: local final review and submission preparation
+# Phase 5: final review and completed submission
 
-Phase 5 includes FS-009/010 and T-033..T-037: reporting, packaging, setup/limitations review and an actual captioned demo. This is more than a code review. Local preparation does not close external submission or the missing video gate. Phase 4's local protocol passed; its live comparison remains INCONCLUSIVE (0/2 comparable pairs). The owner explicitly authorized this final preparation despite that availability limitation; it is not relabeled a successful comparison.
+Phase 5 delivery is complete: local reporting, packaging and review passed, and the project owner confirms that the demo video and OpenFire submission are complete. External completion is owner-reported; the controller has not inspected a recording or submission receipt. Phase 4's local protocol passed; its live comparison remains INCONCLUSIVE (0/2 comparable pairs). Completion of the submission does not relabel that comparison.
 
 ## Evidence summary export
 
@@ -20,7 +20,7 @@ Exports omit raw streams, provider prompts, API headers, absolute host paths and
 | T-034 | Build final wheel, install without index/dependencies into a clean temporary venv, run module/console/inspect smoke | One Windows host, not independent two-machine reproduction |
 | T-035 | CI inspected: pinned checkout/setup actions, locked dependencies, deterministic tests and pre-reviewed Docker image; no model key, env file, secret interpolation or live provider step | No Phase 4/5 remote CI run is inferred from local changes |
 | T-036 | Required docs, setup, model attribution, architecture, limitations, source references and public manifest reviewed | Actual published branch/repository must be reviewed by owner |
-| T-037 | Caption plan and screenshot-ready retained evidence prepared; all quoted values come from authenticated records | Actual 90–120 second screen recording and human review remain NOT DONE |
+| T-037 | Demo video completed, confirmed by the project owner; retained evidence and caption materials prepared | Recording duration/content not independently inspected; no video URL supplied |
 
 ## Findings resolved during review
 
@@ -30,12 +30,12 @@ The README lead still described Phase 4 as planned and Phase 3 CI as pending des
 
 Checked the organizer's [OpenFire page](https://luma.com/2k6cxr0n) on 2026-10-27: build ends October 27 at 8 PM IST; submission form closes at 10 PM IST. It requests an X post with a 1–3 minute demo, a working link and public open-source GitHub repository. The local stricter 90–120 second demo plan fits that range.
 
-The current public rules state **Alan + open models**. Earlier repository notes said Alan optional based on Town Hall context, which is not independently available here. This project uses Google-hosted Gemma; Alan integration/use is not evidenced by this implementation. Organizer confirmation is required to resolve that conflict; do not claim eligibility as verified or add an unrequested integration under deadline pressure. Nothing was posted, submitted or published by the controller.
+The current public rules state **Alan + open models**. Earlier repository notes said Alan optional based on Town Hall context, which is not independently available here. This project uses Google-hosted Gemma; Alan integration/use is not evidenced by this implementation. This was an eligibility question during preparation. The owner has now completed submission; organizer eligibility adjudication is not independently evidenced here. The controller did not post or submit on the owner's behalf.
 
 ## Actual results and limits
 
 Retained Phase 3: genuine Gemma proposal, exact owner approval and fresh original FAIL/candidate PASS under frozen marker; not a new Phase 5 model request. Retained Phase 4: baseline 0/2 PASS, passport 1/2 PASS, three HTTP 500 responses, 0/2 comparable pairs. All original records remain private and immutable. No onboarding improvement claim, measured free billing claim or exact hosted weights attestation. Updated target commit identities after the ten Phase 4 commits belong to fresh Phase 5 audits; they must not be silently substituted into the older Phase 4 controls.
 
-The final work-review entry records observed test counts, fresh three-fixture outcomes, report/package hashes and evidence paths. The complete phase remains OPEN at the actual-video and organizer eligibility gates. A second machine is desirable but has not been tested. Local source artifacts and summaries are prepared; no remote CI success, video, X post, form submission or release is invented.
+The final work-review entries record observed test counts, fresh three-fixture outcomes, report/package hashes and evidence paths. The owner subsequently confirmed completion of the demo and submission, closing Phase 5 delivery. A second machine has not been tested. Submission completion is recorded from that confirmation; no remote CI success, recording measurements, public links or organizer acceptance are inferred.
 
-Final local gate: **204 passed, 1 live deselected, 0 skips in 400.68s**. Lint/format (48 files), mypy (43), docs (19), built/installed wheel and fresh three-fixture gate passed. Actual JSON/Markdown: `.peeky/phase5-validation/summary/`; CLI export: `cli-report/`; private hash-indexed bundle: `private-review-evidence.zip`; prepared display/captions: `demo.html`, `demo-captions.srt`. The actual video is absent. Phase 4 commits were pushed at bfa78de; Phase 5 edits remain uncommitted/unpushed.
+Final local gate: **204 passed, 1 live deselected, 0 skips in 400.68s**. Lint/format (48 files), mypy (43), docs (19), built/installed wheel and fresh three-fixture gate passed. Actual JSON/Markdown: `.peeky/phase5-validation/summary/`; CLI export: `cli-report/`; private hash-indexed bundle: `private-review-evidence.zip`; prepared display/captions: `demo.html`, `demo-captions.srt`. The demo and submission are now owner-confirmed complete. Phase 4 commits were pushed at bfa78de; Phase 5 was subsequently committed and pushed at `8546d84`.
