@@ -7,7 +7,7 @@ Statuses: `SCAFFOLD_DONE` means files exist and local tests may pass, **not** en
 | 0 | Contract, repo scaffold, CLI, CI, fixtures, docs | VERIFIED (local foundation gate, Python 3.13) | Locked sync + lint/format/type + CLI help/inspect + unit tests + wheel smoke + docs check |
 | 1 | Immutable source snapshot, run policy, deterministic evidence | VERIFIED (local controller/Git gate) | FS-001/002 pre-execution contracts + T-001..T-008; real Docker remains Phase 2 |
 | 2 | Real Docker smoke audit across good/bad/blocked fixtures | VERIFIED (local and remote CI) | FS-003/004 + T-009..T-017; core/sandbox jobs passed in Actions run 40493116591; PR #4 merged |
-| 3 | Open coding-model diagnosis + docs-only repair + clean retest | LOCAL_GATE_PASSED (remote CI pending) | T-018..T-025 local gates, genuine Gemma response and exact human-approved fresh Docker recheck passed; no Phase 3 remote CI claim |
+| 3 | Open coding-model diagnosis + docs-only repair + clean retest | LOCAL_GATE_PASSED (T-014 CI regression; fix awaiting rerun) | T-018..T-025 local gates, genuine Gemma response and exact human-approved fresh Docker recheck passed; no Phase 3 remote CI claim |
 | 4 | Agent onboarding passport + matched cold-start benchmark | PARTIAL (passport scaffold exists) | FS-007/008 + T-026..T-032 |
 | 5 | Polish, evidence bundle, README, demo, submission review | PLANNED | FS-009/010 + T-033..T-037 |
 
@@ -54,3 +54,12 @@ Build: Markdown summary report, screenshot-ready terminal output, explanations, 
 ## Never silently promote a phase
 
 The official build and submission times may conflict between Town Hall and public Luma summary. Reconfirm on Discord. Stop scope growth at tested MVP, not a platform.
+
+
+## T-014 CI regression follow-up
+
+After the Phase 3 push, Actions run [40502294999](https://github.com/haddybhaiya/peeky/actions/runs/40502294999) completed core successfully but sandbox failed T-014 (16 passed, 1 failed, 1 deselected). Exit 137 was classified FAIL from one Docker State read. The same original OOM case passed locally before the fix; CI logs did not include the full OOM flag, so delayed event observation is a supported diagnosis, not directly measured CI event timing.
+
+Runner 2.1 refreshes an exited-137/explicitly-false OOM state with at most five additional reads in a one-second settling window; each read retains the existing Docker metadata timeout. It preserves every observed state. Only an observed boolean OOMKilled=true yields MEMORY_LIMIT; an unconfirmed 137 becomes INCONCLUSIVE/TERMINATION_UNCERTAIN, not an invented OOM or target FAIL. The strict OOM integration assertion is strengthened to require the observed flag, and detailed failures print full redacted evidence. Local regression validation and next task are recorded in work review. No remote success is claimed until the fix is pushed and CI actually reruns; no new phase is promoted by this repair.
+
+Final local T-014 correction gate: 178 passed, 1 live deselected, 0 skipped in 172.88s; lint/type/docs and installed-wheel smoke passed. Corrected remote CI is awaiting publication/rerun, not claimed green.

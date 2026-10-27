@@ -58,3 +58,10 @@ Core job: `uv sync --locked`; Ruff lint/format, mypy, unit/smoke plus real Git c
 The final deterministic gate passed 169 tests with 1 live deselected and 0 skips in 173.18s (earlier retry gate: 168 passed in 172.21s). This includes the retained-request provenance and Google framing regressions; exact commands are in work review. These deterministic gates include 17 real Docker cases, two of which use explicitly mocked models for repair comparisons. Offline tests require no model key.
 
 T-023 subsequently passed against the genuine Gemma retained response and its authenticated linked revalidation: 1 passed in 3.47s, with no new network request. The owner approved the exact proposal digest, then actual fresh original FAIL/candidate PASS with `PEEKY_RECHECK_OK` produced VERIFIED comparison evidence. Failed/transient/rejected attempts remain retained. Missing free-tier usage/cost alone is now nonfatal by owner instruction; strict JSON/schema/allowlist/approval/oracle checks remain required.
+
+
+## T-014 regression after the Phase 3 push
+
+The observed remote sandbox run failed 1 case (16 passed, 1 deselected); core passed. The original OOM case passed locally before edits, establishing a cross-environment/intermittent observation problem rather than a deterministic local failure. Add strict delayed-OOM/deadline/bounded-state unit histories and two real non-OOM 137 cases. The original memory-limit assertion is not relaxed; it now also requires OOMKilled=true and prints full redacted result JSON on failure. Initial focused regression run found Linux PID 1 ignores a self-sent SIGKILL; the corrected fixture verifies SIGKILL on a child and propagates its actual wait status. Focused runner/Docker gate then passed 29 cases in 72.37s; a subsequent deadline unit is included in the final full gate. No host target execution, untrusted installation or remote CI success is inferred.
+
+Final local T-014 correction gate: 178 passed, 1 live deselected, 0 skipped in 172.88s; lint/type/docs and installed-wheel smoke passed. Corrected remote CI is awaiting publication/rerun, not claimed green.

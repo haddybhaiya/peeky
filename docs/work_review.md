@@ -217,3 +217,28 @@
 
 
 **Final Phase 3 retry gate:** `uv run --locked pytest -m 'not live' -q`: **169 passed, 1 live deselected, 0 skipped in 173.18s**. Separately selected T-023: **1 passed in 3.47s**, using the genuine retained response and explicitly linked zero-request revalidation. Exact owner-approved fresh Docker recheck: **VERIFIED**, original FAIL/candidate PASS with frozen marker. Independently reauthenticated original completion, linked revalidation, approved digest and final comparison; verified unchanged target source, identical non-README files/modes, matching policy/image, distinct containers and owned-container absence. Final wheel source-module bytes and README metadata match. Lint, format, types, docs and package smoke passed; public manifest refreshed. No additional model calls, commits, staging or GitHub writes. Phase 3 is **LOCAL_GATE_PASSED**; remote Phase 3 CI remains pending. Next task is owner review/CI through their normal workflow, then separately authorized Phase 4; no benchmark or release claim.
+
+
+## 2026-10-27 ? T-014 remote CI regression corrected locally
+
+**Observed failure:** read-only GitHub inspection of run 40502294999 / sandbox job 122182712838 at `8497825` confirmed core success and sandbox **1 failed, 16 passed, 1 deselected in 13.14s**. The memory stress case returned code 137 classified FAIL; the log's assertion abbreviated the full result, so the exact OOM flag/event timing was not available. Preserved the original GitHub-redacted job text under ignored `.peeky/ci-oom-regression/original-job-log.json`. The unchanged original test passed locally before edits (1 passed in 14.42s), so this was not reproduced as a deterministic local failure.
+
+**Changed:** runner 2.1 refreshes only exited-137 states with OOMKilled explicitly false, with at most five extra reads under a one-second settling window; each metadata operation retains its existing timeout. Preserve all observed states and final state in provenance. A boolean OOMKilled=true is still required for MEMORY_LIMIT. Unconfirmed 137 is INCONCLUSIVE/TERMINATION_UNCERTAIN because signal and explicit exit statuses overlap. Normal exits do not incur the settling loop; ordinary target failures, resource limits, source/image identity, isolation and cleanup remain enforced. This is a cautious fix for a plausible exit/OOM observation ordering, not a claim that CI's event timing was directly measured.
+
+**Regression evidence:** unit histories cover false-then-true OOM observation with preserved snapshots, the six-read cap even with a stalled clock, elapsed deadline, and no polling for four unrelated terminal/running states. Real integration keeps the 600 MiB allocation under the same 256 MiB sandbox and strengthens its assertion to require actual OOMKilled=true; failures now print full redacted result JSON. Two real non-OOM cases exercise an explicit exit 137 and independently verified child SIGKILL propagation, requiring INCONCLUSIVE without claiming memory exhaustion. The first new self-SIGKILL fixture exited zero because Linux PID 1 ignored its own signal; corrected the fixture to verify actual child wait status, without relaxing the expected outcome.
+
+| Check | Actual result |
+|---|---|
+| Initial focused runner/Docker regression | 28 passed, 1 failed in 83.43s; failure was the PID 1 self-signal fixture described above |
+| Corrected focused runner/Docker regression | 29 passed in 72.37s; the later deadline case is included in the full gate |
+| `uv run --locked pytest -m 'not live' -q` | **178 passed, 1 live deselected, 0 skipped in 172.88s**, including the seven added unit cases and two real Docker cases |
+| Ruff lint / format | All checks passed; 42 files formatted |
+| `mypy src tests` | Success: 38 source files |
+| `scripts/check_docs.py` | 17 public contracts checked |
+| Offline wheel build and installed CLI smoke | Passed; module/console versions and isolated inspect outside the checkout |
+
+**Docs updated:** OOM observation/security contract, runner contract, T-014 requirement/test mapping, assumption A-20, ADR-013, phase tracker and this ledger; public manifest refreshed. Earlier source snapshots, reports, local successes and CI failures remain historical evidence. No assertions were relaxed, checks skipped, target code run on host, dependencies installed or model calls made.
+
+**Known limits / phase gate:** local deterministic, package and documentation gates pass. The one-second metadata window cannot guarantee that every daemon eventually reports an OOM event; unconfirmed 137 stays uncertain rather than becoming an invented memory/target failure. The strict real OOM test will still fail an environment that never supplies that confirmation. Corrected remote CI has **not** run; current remote failure is not relabeled success. No workspace staging, commit, push or GitHub write was performed for this fix.
+
+**Next task:** review/publish this patch and observe a fresh sandbox CI run before claiming the remote gate passed. Keep the Phase 3 model/repair evidence and Phase 4 scope separate from this runner correction.
