@@ -1,5 +1,4 @@
 import json
-import shutil
 from collections.abc import Callable
 from pathlib import Path
 
@@ -67,8 +66,7 @@ def test_T007_missing_docker_records_blocked_without_host_fallback(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    original = shutil.which
-    monkeypatch.setattr(shutil, "which", lambda name: None if name == "docker" else original(name))
+    monkeypatch.setattr("peeky.runner.host_tool", lambda *args, **kwargs: None)
 
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Missing Docker triggered target execution")
@@ -99,4 +97,4 @@ def test_T004_rejected_command_never_reaches_docker(
 
     monkeypatch.setattr("peeky.cli.doctor", forbidden)
     monkeypatch.setattr("peeky.cli.execute", forbidden)
-    assert main(["audit", str(repo), "--approve"]) == 3
+    assert main(["audit", str(repo), "--approve"]) == 2

@@ -11,9 +11,10 @@ from pathlib import Path
 from . import __version__
 from .domain import DEFAULT_POLICY, RunRecord, RunState
 from .evidence import report, write_report
+from .images import DEFAULT_IMAGE
 from .parser import ParseError, read_steps
 from .passport import PassportError, make_passport
-from .policy import PolicyError, safe_argv, validate_image
+from .policy import PolicyError, safe_argv, validate_run_image
 from .runner import doctor, execute
 from .sources import safe_root, snapshot
 
@@ -32,7 +33,9 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument(
         "--approve", action="store_true", help="Acknowledge listed commands may execute"
     )
-    audit.add_argument("--image", default="python:3.12-slim")
+    audit.add_argument(
+        "--image", default=DEFAULT_IMAGE, help="Reviewed cached official Python digest"
+    )
     audit.add_argument("--output", type=Path, default=Path(".peeky/runs"))
     passport = commands.add_parser("passport", help="Create candidate onboarding instructions")
     passport.add_argument("repo", type=Path)
@@ -48,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "doctor":
             status = doctor()
             print(json.dumps(status, sort_keys=True) if args.json else f"Docker: {status}")
-            return 0 if status["docker_daemon"] else 3
+            return 0 if status["docker_daemon"] and status.get("linux") else 3
         if args.command == "passport":
             contents = make_passport(args.repo, args.evidence)
             if args.output.exists():
@@ -58,7 +61,6 @@ def main(argv: list[str] | None = None) -> int:
             print(args.output)
             return 0
         if args.command == "audit":
-            validate_image(args.image)
             if not args.approve:
                 print(
                     "Execution not authorized. Review with `inspect` then pass --approve.",
@@ -68,11 +70,11 @@ def main(argv: list[str] | None = None) -> int:
         repo = safe_root(args.repo)
         with snapshot(repo) as captured:
             steps = read_steps(captured.path)
-            for step in steps:
-                safe_argv(step.command)
             run = RunRecord(captured.identity, tuple(steps))
             run.advance(RunState.INSPECTED)
             if args.command == "inspect":
+                for step in steps:
+                    safe_argv(step.command)
                 if args.json:
                     print(
                         json.dumps(
@@ -95,11 +97,27 @@ def main(argv: list[str] | None = None) -> int:
                     for s in steps:
                         print(f"{s.id} README:{s.line}: {s.command}")
                 return 0 if steps else 2
-            if not steps:
-                print("No opted-in `bash peeky` steps; no execution.", file=sys.stderr)
+            reason = ""
+            try:
+                validate_run_image(args.image)
+                for step in steps:
+                    safe_argv(step.command)
+                if not steps:
+                    reason = "NO_OPTED_IN_COMMANDS"
+                elif len(steps) != DEFAULT_POLICY.max_audit_steps:
+                    reason = "MULTI_STEP_UNSUPPORTED"
+            except PolicyError as exc:
+                reason = str(exc)
+            if reason:
+                run.advance(RunState.BLOCKED)
+                data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
+                data["reason"] = reason
+                print(f"Evidence: {write_report(data, args.output)}")
+                print(f"No execution: {reason}", file=sys.stderr)
                 return 2
             run.advance(RunState.APPROVED)
-            if not doctor()["docker_daemon"]:
+            readiness = doctor(avoid=captured._origin)
+            if not readiness["docker_daemon"] or not readiness.get("linux"):
                 run.advance(RunState.BLOCKED)
                 data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
                 data["reason"] = "Docker daemon unavailable; no target execution"
@@ -111,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             for step in steps:
                 captured.verify()
                 result = execute(
-                    step, captured.path, args.image, timeout=DEFAULT_POLICY.command_timeout_seconds
+                    step, captured, args.image, timeout=DEFAULT_POLICY.command_timeout_seconds
                 )
                 results.append(result)
                 print(f"{step.id}: {result.outcome}")
@@ -120,14 +138,10 @@ def main(argv: list[str] | None = None) -> int:
             captured.verify()
             run.advance(RunState.OBSERVED)
             run.advance(RunState.FINALIZED)
-            path = write_report(
-                report(repo, args.image, steps, results, captured.identity, run, DEFAULT_POLICY),
-                args.output,
-            )
+            data = report(repo, args.image, steps, results, captured.identity, run, DEFAULT_POLICY)
+            path = write_report(data, args.output)
             print(f"Evidence: {path}")
-            return (
-                0 if len(results) == len(steps) and all(r.outcome == "PASS" for r in results) else 1
-            )
+            return 0 if data["verdict"] == "PASS" else 1 if data["verdict"] == "FAIL" else 3
         parser.error("Unknown command")
     except (
         OSError,
