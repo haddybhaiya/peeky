@@ -5,13 +5,13 @@ Statuses: `SCAFFOLD_DONE` means files exist and local tests may pass, **not** en
 | Phase | Purpose | Status | Required gate |
 |---|---|---|---|
 | 0 | Contract, repo scaffold, CLI, CI, fixtures, docs | VERIFIED (local foundation gate, Python 3.13) | Locked sync + lint/format/type + CLI help/inspect + unit tests + wheel smoke + docs check |
-| 1 | Immutable source snapshot, run policy, deterministic evidence | PLANNED | FS-001/002 + T-001..T-008 |
+| 1 | Immutable source snapshot, run policy, deterministic evidence | VERIFIED (local controller/Git gate) | FS-001/002 pre-execution contracts + T-001..T-008; real Docker remains Phase 2 |
 | 2 | Real Docker smoke audit across good/bad/blocked fixtures | PARTIAL (scaffold runner exists) | FS-003/004 + T-009..T-017 on clean runner |
 | 3 | Open coding-model diagnosis + docs-only repair + clean retest | PLANNED | FS-005/006 + T-018..T-025 |
 | 4 | Agent onboarding passport + matched cold-start benchmark | PARTIAL (passport scaffold exists) | FS-007/008 + T-026..T-032 |
 | 5 | Polish, evidence bundle, README, demo, submission review | PLANNED | FS-009/010 + T-033..T-037 |
 
-**Current position on 2026-10-27:** Phase 0 is complete under the local foundation gate: locked dependency sync, Ruff lint/format, mypy, 19 unit/smoke tests, CLI help/inspect, public-checkout documentation validation, wheel build and isolated installed-module/console smoke all passed. Python 3.13.7 and the declared pinned development tools were used. CI and Python 3.12 execution are not claimed. The owner deferred the two Docker tests until Docker is running; they belong to Phase 2 and are not counted as passes or failures here. Phase 1 is next, not implemented by this task. FS/T acceptance IDs remain unchanged. See `docs/work_review.md` for exact evidence and `docs/repository-analysis.md` for open product gaps.
+**Current position on 2026-10-27:** Phases 0 and 1 are locally verified within their respective foundation and controller/Git boundaries. Phase 1 implements bounded committed source capture, source/commit/policy/plan identity, path safety, minimal run transitions and source-bound evidence/passports. Its combined gate completed 85 tests with no skips, plus lint/format/type, docs and packaging checks. Python 3.13.7 and pinned development tools were used; CI/Python 3.12 execution is not claimed. The two real Docker tests remain deferred by the owner and do not count as passes or failures here. Phase 2 hardening and genuine Docker evidence are next. No models or release work was implemented. See `docs/work_review.md` for exact results.
 
 **DO NOT schedule Phase 6+ as part of the hackathon.** Remote public GitHub write automation, language expansion, marketplace, vector memory, recurring hosted agents are separately deferred.
 
@@ -22,6 +22,8 @@ Build: `pyproject.toml`, `uv.lock` (Hatchling/strict-dev-group pattern), `AGENTS
 ## Phase 1 — Trustworthy plans and source identity
 
 Build: `src/peeky/sources.py`, `domain.py`, repository fingerprint, immutable source export and input/command policy; reject symlinks, dirty inconsistent commits and out-of-tree paths. Gate: two independent snapshots of same commit hash identically, symlink/path denial tests, inspect does not execute, limits enforced.
+
+Completed locally: `uv run --locked pytest tests/unit tests/smoke tests/integration/test_source_capture.py -q` (85 passed, 0 skipped), Ruff lint/format, mypy, docs check, offline wheel build and installed CLI smoke. The integration case uses independent real Git/CLI processes, not a mocked PASS. T-007 deliberately stubs unavailable Docker at the capability boundary; it establishes no-host-fallback behavior, not real container isolation. See `docs/source-capture.md` for exact scope, CRLF conversion, budgets and unsigned-evidence limits. Phase 2 is not promoted by these results.
 
 ## Phase 2 — Docker execution and evidence
 

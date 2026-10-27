@@ -8,7 +8,7 @@ This kit borrows the **documentation-first engineering discipline** of `haddybha
 
 ## Quick start
 
-Requires Python 3.12+, and Docker for real target execution. Model credentials **not** required for scaffold smoke checks.
+Requires Python 3.12+, Git, and Docker for real target execution. Model credentials **not** required for scaffold smoke checks. Sources must be committed local Git directories: modified, staged or untracked non-ignored files in the selected directory block capture. A committed subdirectory (including the fixtures below) can be selected without requiring unrelated directories to be clean.
 
 ```bash
 python -m pip install -e .
@@ -24,7 +24,7 @@ peeky audit tests/fixtures/good_repo --approve --image python:3.12-slim
 peeky passport tests/fixtures/good_repo --evidence .peeky/runs/REPLACE_WITH_RUN_ID.json
 ```
 
-The `audit` command creates an evidence JSON in `.peeky/runs/`. It does **not** rewrite your repository, use an LLM, install dependencies, or access the network. It executes only **explicitly annotated** README blocks, only after `--approve`, inside a restricted, offline container. Each approved command uses its own fresh container; session-dependent workflows are **out of scaffold scope**. Use image digests and pre-pulled images for reproducible evidence.
+The `audit` command creates schema 1.1 evidence JSON in `.peeky/runs/`. It captures verified committed Git bytes into a temporary read-only source export and mounts that export for execution. It does **not** rewrite your repository, use an LLM, install dependencies, or access the network. It executes only **explicitly annotated** README blocks, only after `--approve`, inside a restricted, offline container. Missing Docker records a BLOCKED attempt with INCONCLUSIVE verdict and no target execution. Each approved command uses its own fresh container; session-dependent workflows are **out of scaffold scope**. Use image digests and pre-pulled images for reproducible evidence.
 
 For contributors:
 
@@ -34,7 +34,7 @@ uv sync --locked
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy src tests
-uv run --locked pytest tests/unit tests/smoke -m 'not live and not docker'
+uv run --locked pytest tests/unit tests/smoke tests/integration/test_source_capture.py -m 'not live and not docker'
 uv run --locked python scripts/check_docs.py
 uv build --wheel
 uv run --locked python scripts/smoke_wheel.py
@@ -50,10 +50,12 @@ The [repository analysis](docs/repository-analysis.md) records the current imple
 
 ## CLI contracts
 
-- `peeky inspect PATH [--json]`: extract **opted-in** fenced `bash peeky` commands as a proposal; never run them.
+- `peeky inspect PATH [--json]`: capture committed source and extract **opted-in** fenced `bash peeky` commands as a proposal; never run them. JSON is now an object containing `source`, `policy_sha256`, `run` and `steps`, replacing the scaffold's bare step list.
 - `peeky doctor [--json]`: check whether Docker CLI/daemon is available; never install Docker.
 - `peeky audit PATH --approve [--image IMAGE] [--output DIR]`: execute strictly gated commands in Docker; output the exact evidence file location. Default `--image python:3.12-slim` is a **development convenience, not a pinned release image**.
-- `peeky passport PATH --evidence FILE [--output FILE]`: generate **unmerged** `AGENTS.generated.md` only from a successful, matching run.
+- `peeky passport PATH --evidence FILE [--output FILE]`: generate **unmerged** candidate `AGENTS.generated.md` only from internally consistent schema 1.1 evidence bound to the current clean commit, full selected source and policy. Legacy schema 1.0 is rejected; rerun the audit. JSON is not signed execution proof.
+
+See [source capture and identity](docs/source-capture.md) for path rules, limits, CRLF handling and unsupported Git worktrees/filters. Git metadata is read on the host through trusted Git plumbing; target scripts, imports and hooks are never run there.
 
 Annotated README syntax:
 

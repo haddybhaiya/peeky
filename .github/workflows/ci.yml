@@ -18,7 +18,7 @@ jobs:
       - run: uv run --locked ruff check .
       - run: uv run --locked ruff format --check .
       - run: uv run --locked mypy src tests
-      - run: uv run --locked pytest tests/unit tests/smoke -m 'not docker and not live'
+      - run: uv run --locked pytest tests/unit tests/smoke tests/integration/test_source_capture.py -m 'not docker and not live'
       - run: uv run --locked python scripts/check_docs.py
       - run: uv build --wheel
       - run: uv run --locked python scripts/smoke_wheel.py

@@ -1,6 +1,6 @@
 # Peeky repository analysis
 
-Reviewed 2026-10-27; updated after the Phase 0 completion pass. The initial review covered an untracked scaffold; it has since been committed by the owner, and this follow-up describes changes on top of `a68c595`. Phase 0's local foundation gate is now verified. This does not certify a release or CI run. Phase 1 is next; later phases remain planned or partial.
+Reviewed 2026-10-27; updated after Phase 1 implementation on top of `d9dbd68`. Phases 0 and 1 are locally verified within their foundation/controller/Git scope. This does not certify a release, CI run or Docker execution. Phase 2 is next; later phases remain planned or partial.
 
 ## Purpose and current flow
 
@@ -12,38 +12,39 @@ The current flow is `inspect -> policy validation -> approved audit -> JSON evid
 |---|---|
 | `src/peeky/cli.py` | argparse commands: inspect, doctor, audit and passport; approval gate before audit |
 | `parser.py` | Reads a bounded, non-symlink README; extracts up to 12 annotated commands with line numbers |
+| `sources.py`, `domain.py` | Verify committed Git bytes, selected-scope cleanliness, safe bounded temporary exports and source/policy/plan/state identity |
 | `policy.py` | Restricts executable names, arguments, shell syntax and Python image identifiers |
 | `runner.py` | Invokes Docker without a host shell; offline, non-root, read-only filesystem/source and resource limits |
 | `evidence.py` | Reduces step outcomes and writes uniquely named JSON records |
-| `passport.py` | Produces candidate onboarding text after basic evidence and README checks |
+| `passport.py` | Produces candidate guidance after complete source/commit/policy/plan/state/result consistency checks |
 | `tests/` | Parser, policy, verdict and passport units; CLI smoke; two Docker fixture cases |
 | `.github/workflows/ci.yml` | Declares core and Docker jobs with locked dependency installation; their presence is not evidence that CI passed |
 
-There is no immutable source capture, persistent run state machine, model provider, repair engine, clean-retest controller, agent benchmark harness or Markdown report exporter. `peeky.example.toml` and model environment variables are templates and are not consumed by the CLI.
+Immutable source capture and minimal controller transitions with terminal run history now exist. There is no durable intermediate/crash journal, model provider, repair engine, clean-retest controller, agent benchmark harness or Markdown report exporter. `peeky.example.toml` and model environment variables remain templates and are not consumed by the CLI.
 
 ## Findings, in priority order
 
-### 1. Passport evidence is not authenticated or bound to the full source
+### 1. Source binding implemented; evidence authenticity remains open
 
-`passport.py:make_passport` trusts caller-supplied `verdict` and per-result `outcome` fields. It does not bind result IDs/commands/exit codes to the proposed steps, validate the recorded commands through policy, or verify a trusted run provenance. It hashes only README, so changing a Python source file does not invalidate the passport. Its module docstring's claim of authenticated evidence is stronger than the implementation.
+The initial scaffold trusted caller-supplied PASS fields and only hashed README. Phase 1 now requires schema 1.1, exact committed source and revision, controller policy/plan identity, legal finalized run history, matching README commands and mechanically consistent complete results. Source mutation and new commits invalidate guidance. The misleading authenticated-evidence docstring was replaced. Local JSON is still unsigned: a fully fabricated self-consistent record is not independent execution proof. Full FS-007 assurance remains gated on later provenance and clean-run validation.
 
-A bounded controller-only probe created synthetic PASS JSON and obtained a passport for an unexecuted command; modifying a sibling source file still allowed that passport. No target command was executed. This is a demonstrated gap against FS-007, T-008/T-027 and INV-08, not proof of verified onboarding.
+The earlier synthetic-PASS/source-mutation probe is historical; the Phase 1 tests now reject its legacy schema, inconsistent commands/results and changed source. No target command executes in those tests, and their synthetic results are not claimed as real Docker outcomes.
 
-### 2. Runner uses mutable host source and mutable image tags
+### 2. CLI source exports implemented; image identity remains open
 
-`runner.py:execute` mounts the live resolved repository directory. There is no exported immutable snapshot, Git revision/dirty-tree check, source-file allowlist or credential exclusion. A read-only mount prevents container writes but does not freeze host-side changes or exclude files already present beneath that directory. Image policy allows mutable Python tags; neither the runner nor CI verifies an immutable image digest. Evidence records a path, README hash and requested image string, not a full source/image identity.
+CLI audit now mounts a bounded temporary export of verified original Git bytes, with scope cleanliness and path/type/credential checks. Evidence includes a complete selected-source manifest, containing commit and policy/plan identities. The low-level runner still has its Path-based fixture interface; the full boundary needs Phase 2 integration validation. Image policy and CI still allow mutable Python tags and do not verify a resolved image digest. Read-only permissions and pre-use checks are not a security boundary against hostile concurrent host mutation.
 
-These gaps are prerequisites for credible comparisons under FS-003, INV-04/05/07 and Phases 1-2. Do not enable public repository scans on this scaffold.
+Phase 1 closes the CLI source-identity prerequisite; image/runtime/provenance gaps still prevent credible matched execution comparisons under FS-003 and INV-04/05/07. Do not enable public repository scans on this scaffold.
 
 ### 3. Output limits and timeout cleanup need stronger enforcement
 
 `runner.py:execute` uses `capture_output=True` and slices stdout/stderr after the process returns. Stored excerpts are bounded, but host capture memory is not. Logs are not redacted. The timeout handler records TIMEOUT but has no named-container/CID cleanup path; terminating the Docker client alone does not establish that container execution has stopped. These are code-review findings; resource exhaustion and persistent-container behavior were not exercised.
 
-### 4. Verdict reduction loses information and trusts outcome labels
+### 4. Mechanical result binding and incomplete-failure handling implemented
 
-`evidence.py:verdict` checks result count before failure outcomes. Because CLI audit stops at the first non-PASS result, a failing first step in a two-step plan becomes overall INCONCLUSIVE. The explicit observed failure should remain visible alongside incomplete coverage. Matching result count also suffices to accept unrelated IDs/commands and a nonzero exit code if the supplied outcome says PASS.
+Phase 1 validates ordered result IDs/commands and exit-code/outcome consistency. A permitted observed failure remains FAIL when later commands were not run; incomplete coverage cannot become PASS. BLOCKED runs cannot carry execution results. Regression tests cover the previously accepted unrelated/nonzero PASS result and the lost failure outcome. Result validation establishes mechanical consistency, not execution authenticity.
 
-Pure controller probes observed INCONCLUSIVE for a failed first step with one remaining step, and PASS for an unrelated result carrying exit code 7 and an outcome label of PASS. These probes did not run target code. FS-003/009 need mechanically consistent result validation and explicit coverage semantics.
+The initial probe outcomes above are historical and now have opposite regression assertions. FS-003/009 still need image/log/time provenance and independent execution observations in later phases.
 
 ### 5. Docker tests can skip instead of enforcing the integration gate
 
@@ -53,7 +54,7 @@ Both tests in `tests/integration/test_docker.py` call `pytest.skip` when the dae
 
 The follow-up completion task installed the declared pinned development group and generated `uv.lock`. Ruff 0.16.10 fixed the two import-spacing errors and formatted 13 files; all 18 Python files now pass formatting. Ruff lint, mypy 2.4.0 and all 19 unit/smoke cases pass. AST comparison against HEAD confirmed no behavior/assertion changes in the 16 controller/test Python files. The offline wheel build and installed-module/console smoke pass outside the source checkout.
 
-The docs gate now checks 14 public required files and succeeds in a temporary public-checkout copy without the ignored local prompts file. CI uses locked dependency sync. Local validation used Python 3.13.7; Python 3.12 and remote CI remain unverified. The owner deferred Docker integration, which is not required to establish the Phase 0 foundation gate. Findings 1-5 remain open. Exact completed commands and integration limits are recorded in `work_review.md`.
+Phase 0's public-checkout docs gate checked 14 files without the ignored local prompts; Phase 1 adds the source-capture contract for 15 required files. CI uses locked dependency sync. Local validation used Python 3.13.7; Python 3.12 and remote CI remain unverified. Docker integration remains deferred to Phase 2. Source/result consistency portions of the original findings are resolved as described above; runtime and authenticity assurance remain open. Exact commands and integration limits are recorded in `work_review.md`.
 
 ## Rename scope
 
@@ -61,6 +62,6 @@ The project display name is Peeky. The distribution, import and executable are `
 
 ## Next work in phase order
 
-Phase 0 is complete locally. Next implement Phase 1 immutable source identity and behavior tests for T-001..T-008. Phase 2 should address runner capture/cleanup, digest enforcement, redaction, coverage/verdict semantics and genuine Docker gates before model repair or benchmark work starts. Run the two deferred integration tests once Docker is available; do not promote Phase 2 on skipped checks.
+Phases 0 and 1 are complete locally. The Phase 1 combined gate passed 85 cases with 0 skips, including an independent-process real Git integration. Ruff lint/format, mypy, docs, locked sync, offline wheel build and isolated installed CLI smoke passed. See `work_review.md` for initial failures and exact results. Phase 2 should address runner capture/cleanup, digest enforcement, redaction and genuine Docker gates before model repair or benchmark work starts. Run the two deferred integration tests once Docker is available; do not promote Phase 2 on skipped checks.
 
-No security fixes, model calls, benchmark results, Git staging/commits or remote writes are part of this review.
+No model calls, benchmark results, releases, workspace staging/commits or remote writes were made. Tests commit only synthetic temporary Git fixtures.

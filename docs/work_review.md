@@ -90,3 +90,37 @@
 **Phase gate:** Phase 0 VERIFIED for the local foundation checks above. This is not a target/product PASS and does not promote Phase 2. The Docker acceptance criteria are unchanged.
 
 **Next task:** Phase 1 immutable source identities, snapshots and T-001..T-008. Once Docker is running, execute `uv run --locked pytest tests/integration -m docker` and record actual outcomes before claiming a Docker gate.
+
+## 2026-10-27 — Phase 1 source identity and pre-execution gate completed
+
+**Changed:** added `sources.py` for verified raw Git commit/tree/blob capture, selected-scope index/worktree consistency, path/type/credential checks, bounded read-only temporary exports and source integrity verification. Added `domain.py` for frozen source/policy identities, deterministic plan hashes and controller run transitions. CLI inspect/audit now plan from captured committed bytes; only audit can invoke Docker, and it receives the export path. Missing Docker preserves BLOCKED/INCONCLUSIVE evidence without target execution. Schema 1.1 records source/policy/plan/state provenance. Passport validation rejects legacy evidence and source/commit/command/policy/state/result mismatches. Mechanical verdict reduction now preserves an observed failure with later incomplete coverage and rejects unrelated/nonzero PASS results. Runner constants read the shared default policy without changing resource budgets. No model or release feature was added.
+
+**Compatibility:** inspect JSON is now a structured plan object instead of a bare list; passports require schema 1.1. Sources require a clean committed selected directory within an ordinary local Git repo. UTF-8 CRLF checkout equivalence is accepted without executing filters, and exports contain original Git bytes. Dirty files outside a selected subdirectory are irrelevant to its file manifest; a new containing commit still invalidates commit-bound guidance. See `source-capture.md` for bounds and unsupported inputs.
+
+**Environment/revision:** base HEAD `d9dbd68`; Python 3.13.7, uv 0.12.23, pinned pytest 9.1.1/Ruff 0.16.10/mypy 2.4.0. Working tree was clean before implementation. No workspace staging, commit, remote write, credential use, publishing or target host execution. Tests create/commit only synthetic temporary Git repositories with hooks disabled. Python 3.12/Linux/remote CI was not run.
+
+| Completed command/check | Observed result |
+|---|---|
+| Initial focused unit/smoke run | 74 passed, 1 failed: file-count denial was wrapped as a generic Git-tree error; preserved specific SourceError and reran without relaxing the bound/assertion |
+| Intermediate expanded source gates | 78 passed, then 81 passed in 56.22s; 0 skips |
+| `uv run --locked pytest tests/unit tests/smoke tests/integration/test_source_capture.py -q` | Final gate after image-policy regression cases: 85 passed in 62.28s, 0 skipped; includes one real independent-process Git integration |
+| `.venv\Scripts\ruff.exe check .` | All checks passed |
+| `.venv\Scripts\ruff.exe format --check .` | 25 files already formatted |
+| `.venv\Scripts\mypy.exe src tests` | Success: 23 source files |
+| `.venv\Scripts\python.exe scripts/check_docs.py` | 15 required public files checked |
+| `uv sync --locked --offline` | 16 packages resolved/checked from cache; no dependency changes |
+| `uv build --offline --wheel` | Built `dist/peeky-0.1.0.dev0-py3-none-any.whl` for validation only |
+| Initial sandbox wheel smoke | Installed module/console version passed; Git refused metadata access to the workspace repo from the sandbox account; no target execution or policy bypass |
+| `uv run --locked python scripts/smoke_wheel.py` outside sandbox | Passed: clean network-free installation, module version, console version and inspect on the committed good fixture |
+
+**Behavior evidence:** two independent exports match source identity and original Git bytes; changing the worktree does not alter an already captured export; export tampering is detected. Native Windows junctions, Git symlink/submodule README modes, malicious traversal trees, case collisions, dirty/staged/untracked files, tracked credential paths and source budgets are denied. Git filters/fsmonitor/environment overrides do not execute the sentinel fixture. SHA-1 and SHA-256 Git repositories are exercised. Separate Peeky processes measure identical source/policy/plan identities and different run IDs. T-001..T-008 are mapped to concrete tests in `requirements-traceability.md`. T-007 stubs only missing Docker at the availability boundary; no Docker success is inferred. Synthetic unit PASS results validate schema binding only.
+
+**Final review correction:** the old image-prefix allowlist also admitted registry-shaped `python:5000/other`. Restricted syntax to official `python:TAG` or a full 64-hex SHA-256 reference and added four rejection cases plus a valid digest assertion. The complete test gate, lint/type checks, offline wheel build and installed CLI smoke passed again after that change. This validates identifier syntax, not a cached image's content or resolved digest. Final public-export docs, all 59 manifest hashes and all 11 packaged source-module bytes were verified; `git diff --check` passed.
+
+**Docs updated:** README/contributor flow, source-capture contract, architecture, runner security, evidence schema, assumptions A-12/A-13, ADR-010, phase tracker, test plan, requirements mapping, repository analysis and this ledger. CI core selection includes the genuine Git integration. Public file manifest refreshed for the added source/tests/docs.
+
+**Known limits:** both Docker tests remain owner-deferred and were not run here. Real container isolation, image digest enforcement, bounded streaming/redaction, timeout cleanup, authenticated execution evidence and durable intermediate/crash journaling remain Phase 2/later work. The low-level runner retains its Path-based fixture interface; only CLI capture/mount flow was changed. File permissions/integrity checks do not defend against a hostile concurrent host owner. Known credential filename checks are not a complete secret scan. JSON is unsigned and cannot independently prove execution. No models, repair loop, benchmark or release is claimed.
+
+**Phase gate:** Phase 1 VERIFIED locally for FS-001/002 pre-execution contracts and T-001..T-008, plus real Git integration and package/docs gates. This is not a real Docker/product PASS and does not promote Phase 2.
+
+**Next task:** Phase 2 runner boundary and evidence hardening, followed by genuine Docker T-009..T-017 once the daemon is available. Do not begin models/repair or release until prerequisite gates pass.
