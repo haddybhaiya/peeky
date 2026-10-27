@@ -10,4 +10,8 @@
 
 **Metrics:** success rate with denominator, attempts-to-first-success, tool calls, time, tokens; annotate blocked and environment errors separately. Show both raw runs and a cautious summary. If no tool-enabled agent harness exists, mark this **NOT RUN**, not a simulated benchmark.
 
-**Implementation choice:** keep benchmark process isolated from controller with a restricted tool subset: read files, approved Docker executor, no arbitrary host shell, no Git write, no network, no secrets. A multi-agent swarm is explicitly not required.
+**Implemented boundary:** each remote model conversation is fresh; the trusted dispatcher remains in the controller process. Its only tools read bounded captured files or request the approved fresh offline Docker executor. No local untrusted agent process, arbitrary host shell, Git write, network tool or secret access is exposed. This narrows the original proposed separate-worker architecture; see `phase4-onboarding.md` and ADR-014.
+
+## Phase 4 observed result
+
+The harness is implemented and genuine native-tool use was observed. Two complete pairs used identical frozen controls: baseline 0/2 PASS (2 INCONCLUSIVE), passport 1/2 PASS (1 INCONCLUSIVE). Three of four provider responses were HTTP 500. Only the successful passport arm invoked the real fresh Docker executor and matched the independent marker. Comparable pairs are 0/2 because three served model identities are unavailable. No lift estimate is justified. The second pair followed the first error and is disclosed as adaptive sampling, not a preregistered replication. Both actual traces and all negative outcomes remain in authenticated local records; see `phase4-onboarding.md` for paths, exact protocol, usage limits and report.
