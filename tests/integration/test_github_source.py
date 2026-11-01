@@ -1,10 +1,12 @@
 """Real Git fetch/capture with a local transport fixture; no live GitHub dependency."""
 
+import json
 from pathlib import Path
 
 import pytest
 
 from peeky import github
+from peeky.cli import main
 from peeky.sources import fingerprint
 
 pytestmark = pytest.mark.integration
@@ -50,3 +52,30 @@ def test_remote_snapshot_matches_local_and_cleans_all_storage(
         assert interrupt
     assert not exported.exists()
     assert local_transport and all(not path.exists() for path in local_transport)
+
+
+def test_cli_remote_json_is_a_plan_and_never_executes(
+    repo: Path,
+    local_transport: list[Path],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Inspection reached Docker or target execution")
+
+    monkeypatch.setattr("peeky.cli.doctor", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    expected = fingerprint(repo)
+    assert main(["inspect", URL, "--ref", expected.git_commit, "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["remote"] == {
+        "url": URL,
+        "requested_ref": expected.git_commit,
+        "resolved_ref": None,
+        "git_commit": expected.git_commit,
+    }
+    assert data["source"]["git_commit"] == expected.git_commit
+    assert data["source"]["source_sha256"] == expected.source_sha256
+    assert data["steps"][0]["command"] == "python smoke.py"
+    assert data["run"]["state"] == "INSPECTED" and "verdict" not in data
+    assert all(not path.exists() for path in local_transport)

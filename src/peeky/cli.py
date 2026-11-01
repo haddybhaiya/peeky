@@ -5,18 +5,20 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from contextlib import ExitStack
 from dataclasses import asdict
 from pathlib import Path
 
 from . import __version__
 from .domain import DEFAULT_POLICY, RunRecord, RunState
 from .evidence import report, write_report
+from .github import RemoteSource, github_snapshot
 from .images import DEFAULT_IMAGE
 from .parser import ParseError, read_steps
 from .passport import PassportError, make_passport
 from .policy import PolicyError, safe_argv, validate_run_image
 from .runner import doctor, execute
-from .sources import safe_root, snapshot
+from .sources import SourceError, SourceSnapshot, safe_root, snapshot
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,7 +26,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"peeky {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
     inspect = commands.add_parser("inspect", help="Preview annotated README commands")
-    inspect.add_argument("repo", type=Path)
+    inspect.add_argument("repo", help="Local Git directory or public GitHub repository URL")
+    inspect.add_argument("--ref", help="GitHub branch, tag or full commit SHA (URL inputs only)")
     inspect.add_argument("--json", action="store_true")
     check = commands.add_parser("doctor", help="Check Docker readiness")
     check.add_argument("--json", action="store_true")
@@ -71,6 +74,39 @@ def build_parser() -> argparse.ArgumentParser:
     summary.add_argument("--evidence", type=Path, action="append", required=True)
     summary.add_argument("--output", type=Path, required=True)
     return parser
+
+
+def _remote_input(value: str) -> bool:
+    return "://" in value or value.startswith(("http:", "https:", "git:", "ssh:", "file:", "git@"))
+
+
+def _print_inspection(captured: SourceSnapshot, remote: RemoteSource | None, as_json: bool) -> int:
+    steps = read_steps(captured.path)
+    for step in steps:
+        safe_argv(step.command)
+    run = RunRecord(captured.identity, tuple(steps))
+    run.advance(RunState.INSPECTED)
+    if as_json:
+        data: dict[str, object] = {
+            "schema_version": "1.1",
+            "source": asdict(captured.identity),
+            "policy_sha256": DEFAULT_POLICY.sha256,
+            "run": run.dict(),
+            "steps": [asdict(step) for step in steps],
+        }
+        if remote is not None:
+            data["remote"] = asdict(remote)
+        print(json.dumps(data, indent=2))
+    else:
+        if remote is not None:
+            print(f"Repository: {remote.url}")
+            print(f"Ref: {remote.requested_ref or '(default)'} -> {remote.git_commit}")
+        print(f"Source: {captured.identity.git_commit} {captured.identity.source_sha256}")
+        print(f"Plan: {run.dict()['plan_sha256']}")
+        print(f"Proposed steps: {len(steps)} (never executed)")
+        for step in steps:
+            print(f"{step.id} README:{step.line}: {step.command}")
+    return 0 if steps else 2
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -160,36 +196,27 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
+        if args.command == "inspect":
+            with ExitStack() as stack:
+                remote = None
+                if _remote_input(args.repo):
+                    fetched = stack.enter_context(github_snapshot(args.repo, args.ref))
+                    captured = fetched.source
+                    remote = fetched.remote
+                else:
+                    if args.ref is not None:
+                        raise SourceError("--ref is supported only for GitHub URL inspection")
+                    captured = stack.enter_context(snapshot(safe_root(Path(args.repo))))
+                return _print_inspection(captured, remote, args.json)
+        if _remote_input(str(args.repo)):
+            raise SourceError(
+                "GitHub URLs are supported by inspect only; URL audits are a separate milestone"
+            )
         repo = safe_root(args.repo)
         with snapshot(repo) as captured:
             steps = read_steps(captured.path)
             run = RunRecord(captured.identity, tuple(steps))
             run.advance(RunState.INSPECTED)
-            if args.command == "inspect":
-                for step in steps:
-                    safe_argv(step.command)
-                if args.json:
-                    print(
-                        json.dumps(
-                            {
-                                "schema_version": "1.1",
-                                "source": asdict(captured.identity),
-                                "policy_sha256": DEFAULT_POLICY.sha256,
-                                "run": run.dict(),
-                                "steps": [asdict(s) for s in steps],
-                            },
-                            indent=2,
-                        )
-                    )
-                else:
-                    print(
-                        f"Source: {captured.identity.git_commit} {captured.identity.source_sha256}"
-                    )
-                    print(f"Plan: {run.dict()['plan_sha256']}")
-                    print(f"Proposed steps: {len(steps)} (never executed)")
-                    for s in steps:
-                        print(f"{s.id} README:{s.line}: {s.command}")
-                return 0 if steps else 2
             reason = ""
             try:
                 validate_run_image(args.image)
