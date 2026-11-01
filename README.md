@@ -1,4 +1,4 @@
-# Peeky — OpenFire MVP engineering kit
+# Peeky 
 
 **Product hypothesis:** A repository should be demonstrably installable for a first-time human and bootstrappable for a fresh coding agent, not merely documented as such.
 
