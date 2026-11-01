@@ -13,8 +13,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from .domain import DEFAULT_POLICY, RunPolicy
 from .hosttools import host_tool
-from .sources import SourceError
+from .sources import SourceError, SourceSnapshot, _committed_snapshot
 
 
 @dataclass(frozen=True)
@@ -299,3 +300,23 @@ def fetched_repository(
             raise SourceError("Fetched GitHub commit differs from the resolved revision")
         _run_git(root, "update-ref", "HEAD", remote.git_commit, limits=limits)
         yield FetchedRepository(root, remote)
+
+
+@dataclass(frozen=True)
+class GitHubSnapshot:
+    source: SourceSnapshot
+    remote: RemoteSource
+
+
+@contextmanager
+def github_snapshot(
+    url: str,
+    ref: str | None = None,
+    *,
+    policy: RunPolicy = DEFAULT_POLICY,
+    limits: FetchLimits = DEFAULT_FETCH_LIMITS,
+) -> Iterator[GitHubSnapshot]:
+    """Tie temporary Git storage and a verified read-only export to one lifecycle."""
+    with fetched_repository(url, ref, limits=limits) as fetched:
+        with _committed_snapshot(fetched.path, fetched.remote.git_commit, policy) as source:
+            yield GitHubSnapshot(source, fetched.remote)
