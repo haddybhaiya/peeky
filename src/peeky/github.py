@@ -261,9 +261,13 @@ def _resolve(
             if not line:
                 continue
             value, name = line.split("\t")
+            # ls-remote patterns also match ref suffixes, even when qualified.
+            # Only exact requested names participate in validation/resolution.
+            if name not in patterns:
+                continue
             if name == "HEAD" and value.startswith("ref: refs/heads/"):
                 default_ref = value.removeprefix("ref: ")
-            elif name in patterns and re.fullmatch(r"[a-f0-9]{40}", value):
+            elif re.fullmatch(r"[a-f0-9]{40}", value):
                 if name in records:
                     raise ValueError("Duplicate advertised ref")
                 records[name] = value

@@ -378,3 +378,35 @@ were not tested. Inspection provenance is not authenticated execution evidence.
 documentation gates PASSED. Remote CI is pending at this local checkpoint; no
 GitHub Actions success is inferred from workflow edits. Complete the authorized
 ten-commit push/PR, then implement the separately scoped full URL audit increment.
+
+## 2026-11-01 — PR #8 ref suffix review fix
+
+**Changed:** the owner authorized one additional fix commit and push. Git's
+`ls-remote` patterns match suffixes, so valid extra refs such as `topic/HEAD` caused
+the resolver to reject default inspection. Filter to exact requested names before
+validating values. Missing/ambiguous refs and malformed/duplicate selected values
+still fail. No execution/source-capture policy changes.
+
+**Regression evidence:** real Git fixtures reproduce the reported default-ref
+error and qualified named-ref collisions. Eight new cases cover default/explicit
+HEAD, branches, lightweight/annotated tag aliases, and shorthand/qualified branch
+requests. Colliding refs point to another commit, so assertions prove the intended
+commit wins. Git porcelain refuses creating an annotated tag literally named HEAD;
+the fixture creates a normal annotated tag then adds its HEAD ref using Git
+plumbing. This fixes fixture setup without weakening the regression assertions.
+
+**Tested:** focused URL suite: **78 passed**. Final core/Git suite:
+`pytest tests/unit tests/smoke tests/integration -m 'not docker and not live' -q`:
+**269 passed, 20 Docker deselected, 0 skips in 8.25s**; log retained at
+`.peeky/github-inspect-validation/review-fix-final.log`. Ruff lint/format (51 files),
+strict mypy (46 files), 20-document check, offline wheel build/isolated installed
+wheel smoke, whitespace and refreshed 91-file public manifest checks passed.
+The fix changes ref parsing only; Docker execution and live provider gates were
+not rerun for this follow-up. Earlier full-Docker results remain historical.
+
+**Docs updated:** GH-002 ref rules, assumption A-27, ADR-016 correction, phase
+tracker and this ledger. **Known limits:** existing URL inspection boundaries are
+unchanged. **Gate / next task:** local review-fix gate PASSED; push one commit
+authored by `haddybhaiya <harshsharma2k614@gmail.com>` with
+`Co-authored-by: Codex <codex@openai.com>`, then observe fresh PR CI. Remote CI
+success for this new commit is not inferred from earlier green runs.

@@ -25,6 +25,9 @@ remote HEAD. Named branches/tags and full commit SHAs are supported, not revisio
 expressions or abbreviated SHAs. When a branch and tag share a name, qualify it
 with `refs/heads/NAME` or `refs/tags/NAME`. Annotated tags are peeled to commits;
 tags pointing to non-commit objects cannot be inspected.
+Git's ref query also returns suffix matches, so Peeky filters records to exact
+requested names. A branch such as `topic/HEAD` or a tag named `HEAD` therefore
+does not interfere with default-branch inspection.
 
 Exit codes: 0 means a valid nonempty inspection plan, 2 means no opted-in commands,
 and 3 means an invalid/unsupported source, command-policy or infrastructure error.

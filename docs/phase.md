@@ -97,3 +97,7 @@ coverage. The local gate passed; exact commands/results are in the latest work
 review. Remote CI for this branch remains pending until actually observed.
 URL audits, remote passport/recheck handling, dependency setup and InstaBox are
 deferred. Next implementation task is the separately scoped URL audit PR.
+
+PR #8 review follow-up: corrected GH-002 ref advertisement filtering after real
+Git reproduced suffix collisions. The focused/core/package checks passed; details
+are in the latest work review. No URL audit or new phase is enabled by this fix.

@@ -44,11 +44,11 @@
     },
     {
       "path": "docs/assumptions.md",
-      "sha256": "7d63dc5b26175c700e1a9caf41f182e7c55ce6e67ee005926a4d441fc61ed481"
+      "sha256": "720e955018c407c1ac20d869e99b013d5169b2a4528b6a3258fe4476cd6ea33b"
     },
     {
       "path": "docs/decisions.md",
-      "sha256": "c54184abfd0404686f2ee49747dfe77e21d0e3cc40bb164380a47c3b77dff2e4"
+      "sha256": "db7fc1d8f2021bbd23976f775228f0c165b4fa0bfc33d9d312944e81fd1e492c"
     },
     {
       "path": "docs/demo-plan.md",
@@ -64,7 +64,7 @@
     },
     {
       "path": "docs/github-sources.md",
-      "sha256": "e66a67a2533834803c297e11089bc8df9f77c173a60f0d38b5dccab58fd3b519"
+      "sha256": "8d7a863ee4cfca6557fd38a38b3075e16ccc3ba1063ea5bd4f05f652226166c8"
     },
     {
       "path": "docs/invariants.md",
@@ -80,7 +80,7 @@
     },
     {
       "path": "docs/phase.md",
-      "sha256": "50f0e93dcc61ed80843597220a0197ff222f5849fae5fb45f76c0d16254f0397"
+      "sha256": "0ec01b1210aa6fa06f3fa9ff4091fb3519349155cf7ec26ae29136c14bee6aaa"
     },
     {
       "path": "docs/phase2-runner.md",
@@ -132,7 +132,7 @@
     },
     {
       "path": "docs/work_review.md",
-      "sha256": "563cddd1d07ffcc7b76fe91013ef59da65716acd1800238e25ddfb9ee40db56a"
+      "sha256": "43df723f66d5b5a96b2ee94482b6e89d18793d66eaa02ed70efdca6c011c941e"
     },
     {
       "path": "peeky.example.toml",
@@ -188,7 +188,7 @@
     },
     {
       "path": "src/peeky/github.py",
-      "sha256": "5d66d715f92aecb50ce087b83cb91566993ff141e598f2787b744223c216d798"
+      "sha256": "3fc5219ebb357bb0d0cb9593e495ffaa52d09ef016c06db49a59248f5f1ca862"
     },
     {
       "path": "src/peeky/hosttools.py",
@@ -284,7 +284,7 @@
     },
     {
       "path": "tests/integration/test_github_source.py",
-      "sha256": "fd04870044e68571810fbded2dcbb1ebcddae45e4dbfbefe510a9b94c573117d"
+      "sha256": "72e7808f5b344fbb9359917b4e5437d742f55ce56ec82c5bddd15f7f4cac3668"
     },
     {
       "path": "tests/integration/test_repair_docker.py",

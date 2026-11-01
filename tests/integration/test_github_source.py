@@ -105,6 +105,70 @@ def test_branches_tags_and_missing_refs(
     assert all(not path.exists() for path in local_transport)
 
 
+@pytest.mark.parametrize("ref", [None, "HEAD"])
+@pytest.mark.parametrize("collision", ["branch", "lightweight_tag", "annotated_tag"])
+def test_default_ref_ignores_other_refs_ending_in_head(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    ref: str | None,
+    collision: str,
+) -> None:
+    expected = fingerprint(repo)
+    default_ref = git(repo, "symbolic-ref", "HEAD").strip().decode()
+    other = (
+        git(
+            repo,
+            "commit-tree",
+            expected.git_tree,
+            "-p",
+            expected.git_commit,
+            input=b"different fixture revision for suffix match\n",
+        )
+        .strip()
+        .decode()
+    )
+    assert other != expected.git_commit
+    if collision == "branch":
+        git(repo, "update-ref", "refs/heads/topic/HEAD", other)
+    elif collision == "lightweight_tag":
+        git(repo, "update-ref", "refs/tags/HEAD", other)
+    else:
+        git(repo, "tag", "-a", "collision-tag", other, "-m", "annotated collision fixture")
+        tag = git(repo, "rev-parse", "refs/tags/collision-tag").strip().decode()
+        git(repo, "update-ref", "refs/tags/HEAD", tag)
+    with github.github_snapshot(URL, ref) as captured:
+        assert captured.source.identity == expected
+        assert captured.remote.git_commit == expected.git_commit
+        assert captured.remote.resolved_ref == default_ref
+    assert local_transport and all(not path.exists() for path in local_transport)
+
+
+@pytest.mark.parametrize("ref", ["topic", "refs/heads/topic"])
+def test_named_ref_ignores_suffix_matches_for_qualified_names(
+    repo: Path, git: Callable[..., bytes], local_transport: list[Path], ref: str
+) -> None:
+    expected = fingerprint(repo)
+    git(repo, "branch", "topic")
+    other = (
+        git(
+            repo,
+            "commit-tree",
+            expected.git_tree,
+            "-p",
+            expected.git_commit,
+            input=b"different fixture revision for qualified suffix match\n",
+        )
+        .strip()
+        .decode()
+    )
+    git(repo, "update-ref", "refs/heads/nested/refs/heads/topic", other)
+    with github.github_snapshot(URL, ref) as captured:
+        assert captured.source.identity == expected
+        assert captured.remote.resolved_ref == "refs/heads/topic"
+    assert local_transport and all(not path.exists() for path in local_transport)
+
+
 def test_branch_movement_does_not_change_selected_commit(
     repo: Path,
     git: Callable[..., bytes],

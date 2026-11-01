@@ -101,3 +101,9 @@ remain limitations. Deterministic integration uses real Git with an explicitly
 substituted local transport; separate live public GitHub inspections were observed.
 The baseline empty-`.git` marker regression now gets a precise local-repository
 error without weakening the existing rejection test.
+
+**ADR-016 review correction:** `ls-remote` patterns match ref suffixes, including
+qualified-name suffixes. Filter unrelated advertised names before validating the
+selected records. Keep malformed/duplicate selected values, missing refs and
+branch/tag ambiguity as errors. Real Git regressions exercise both default HEAD
+and named refs with different-commit suffix collisions.
