@@ -15,6 +15,11 @@ Statuses: `SCAFFOLD_DONE` means files exist and local tests may pass, **not** en
 
 **DO NOT schedule Phase 6+ as part of the hackathon.** Remote public GitHub write automation, language expansion, marketplace, vector memory, recurring hosted agents are separately deferred.
 
+**Post-MVP work (2026-11-01):** the owner separately authorized the first public
+GitHub URL inspection PR, ten commits, a branch push and opening a PR. This is an
+inspection-only increment under GH-001..GH-008, documented in `github-sources.md`.
+It does not change the completed submission or the recorded Phase 4 result.
+
 ## Phase 0 — Package and CI foundations
 
 Build: `pyproject.toml`, `uv.lock` (Hatchling/strict-dev-group pattern), `AGENTS.md`, CLI commands, fixtures, public docs and locked CI dependency setup. Gate: `uv sync --locked`, lint/format/type, unit/smoke, doc check, wheel creation and isolated installed wheel CLI smoke. Completed locally; see the Phase 0 completion entry in work review. This foundation gate does not establish target execution, model repair or benchmark success. Docker integration remains a Phase 2 gate. No model costs.
@@ -82,3 +87,13 @@ Final Phase 5 local review gate: **204 passed, 1 live deselected, 0 skips in 400
 ## Phase 5 completion update
 
 The owner confirms the demo video and all submission work are complete. Phase 5 is closed for project delivery, combining the recorded local technical gates with owner-reported external completion. The earlier missing-video/submission checkpoints above are historical. The recording URL, duration, content and submission receipt were not supplied for independent controller inspection; no links or additional checks are invented. Phase 5 implementation was committed and pushed as `8546d84`. The inconclusive Phase 4 report, unknown hosted weights/billing and unperformed second-machine reproduction remain unchanged. Next task: await submission feedback; further scope is separately authorized.
+
+## Post-MVP GitHub URL inspection — PR 1
+
+GH-001..GH-008 implement public repository-root inputs, branch/tag/full-SHA
+resolution, temporary no-checkout fetching, verified metadata-only source capture,
+CLI inspection/provenance, failure limits/cleanup and deterministic CI/package
+coverage. The local gate passed; exact commands/results are in the latest work
+review. Remote CI for this branch remains pending until actually observed.
+URL audits, remote passport/recheck handling, dependency setup and InstaBox are
+deferred. Next implementation task is the separately scoped URL audit PR.

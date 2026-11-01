@@ -304,3 +304,77 @@ Both actual requests returned Google HTTP 500, each with one model call, zero to
 **README wording:** at the owner's request, removed the word inconclusive from the README and describe the benchmark as blocked by provider API errors. The original records and controller status semantics remain unchanged. README retains all attempted-call denominators, the genuine successful execution and the absence of a supported improvement estimate. General incomplete-check guidance now uses plain language; it still forbids counting incomplete work as PASS. Demo/submission completion remains owner-confirmed.
 
 **Validation:** documentation checks, public-manifest hashes and whitespace checks; no application changes or new runtime tests. No commit or push requested in this turn.
+
+## 2026-11-01 — Owner-authorized GitHub URL inspection PR
+
+**Authorization/scope:** the owner requested the first public GitHub URL resolution
+and inspection PR, exactly ten commits, a branch push and opening a PR. Each commit
+includes `Co-authored-by: Codex <codex@openai.com>`. Base main is
+`54eb880aea02b9f84eac7adc48dbdf9aa6e83b21`; branch `feat/github-url-inspect`.
+This is a separately authorized post-MVP increment, not another hackathon phase.
+
+**Changed:** added strict public repository-root URL/ref validation, anonymous
+HTTPS-only trusted Git transport, immutable named-ref resolution and shallow
+no-checkout fetching into private temporary storage. Shared source capture now
+supports metadata-only Git objects with the same hash/path/type/size restrictions
+and read-only export. Local worktree/index checks remain required. CLI `inspect`
+accepts URLs and `--ref`, emits additive `remote` provenance, and preserves local
+output. URL audit execution remains explicitly unsupported. Git fetches have
+monitored storage/output/deadline limits and owned helper-process cleanup.
+
+**Baseline finding:** the initial existing non-Docker suite returned 183 passed,
+1 failed. An empty managed `/tmp/.git` marker was mistaken for a repository and
+produced a generic metadata error in T-005. Source-root discovery now requires
+readable HEAD metadata; the original rejection assertion is unchanged and passes.
+No test was weakened to accommodate the environment.
+
+**Environment:** Linux controller, Python 3.12.14, locked pytest 9.1.1, Ruff 0.16.10
+and mypy 2.4.0. The managed local Docker socket was checked explicitly; the first
+restricted-shell doctor could not access it, and the explicitly enabled socket
+check succeeded. Prefetched only the existing reviewed Python image digest
+`sha256:12316debbfb86890f6b2d825820612741ba527ad5a44e3902759141d572bfe8f`.
+
+| Completed command/check | Observed result |
+|---|---|
+| `UV_CACHE_DIR=/workspace/.cache/uv uv sync --locked` | Locked environment installed successfully; no dependency/lockfile changes |
+| `pytest tests/unit tests/smoke tests/integration -m 'not docker and not live' -q` | 261 passed, 20 Docker cases deselected, 0 skips |
+| Final `pytest -m 'not live' -q` | **281 passed, 1 live deselected, 0 skips in 41.05s**, including all 20 real Docker cases; `.peeky/github-inspect-validation/final.log` |
+| `ruff check .`, `ruff format --check .` | Passed; 51 Python files formatted |
+| `mypy src tests` | Passed; 46 source/test files |
+| `python scripts/check_docs.py` | Passed; 20 required public contracts |
+| `uv build --wheel --offline`, `python scripts/smoke_wheel.py` | Passed; isolated module/console/local inspect plus packaged GitHub resolver/help checks outside the checkout |
+| Wheel byte/metadata verification | All 21 packaged source modules and README match the working source |
+| Public manifest and whitespace | 91 public file hashes refreshed/verified; `git diff --check` passed |
+
+Commands above used the locked `.venv` executables. Deterministic GitHub integration
+uses real Git subprocesses and fixture commits with only the transport explicitly
+substituted to a local repository. It covers default/named/annotated/Unicode refs,
+ambiguous/missing refs, branch movement, source identity, unsupported source modes,
+credential paths, oversize rejection, no-checkout behavior, CLI non-execution and
+normal/error/interruption cleanup. Unit subprocess probes also cover resource
+limits, redacted errors and cancellation of the owned process.
+
+**Actual public GitHub checks:** inspected `https://github.com/haddybhaiya/peeky`
+twice, once pinned to base SHA and once using the default branch. Both resolved
+`54eb880aea02b9f84eac7adc48dbdf9aa6e83b21`, captured 88 files and measured source
+hash `sha256:7bd0e1c48dd75ea13e85f8271f0bab286ba7d876966c49aa97f7657a6895662b`.
+Both returned INSPECTED with zero opted-in commands and exit 2; neither was an
+audit or target PASS. Source data remained temporary and no target code executed.
+
+**Docs updated:** URL/ref contract and GH-001..GH-008 mapping, README, architecture,
+source capture, post-MVP scope amendment, phase tracker, assumptions A-25/A-26,
+ADR-016, requirement/test mapping, contributor instructions and public manifest.
+CI now includes all non-Docker integration; wheel smoke exercises installed URL
+support without external network.
+
+**Known limits:** public root URLs only; no private credentials, redirects,
+subdirectory links, arbitrary installation, URL audit/passport/recheck, cloud
+backend or new model request. Fetch storage/output limits are polled thresholds
+that can overshoot, not hard filesystem/transfer/memory quotas. Hard controller
+death can leave temporary data. Git/host/TLS/proxy remain trusted. Windows/macOS
+were not tested. Inspection provenance is not authenticated execution evidence.
+
+**Phase gate / next task:** local GH-001..GH-008, regression, Docker, package and
+documentation gates PASSED. Remote CI is pending at this local checkpoint; no
+GitHub Actions success is inferred from workflow edits. Complete the authorized
+ten-commit push/PR, then implement the separately scoped full URL audit increment.

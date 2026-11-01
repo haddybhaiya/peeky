@@ -1,6 +1,6 @@
 # Test plan and exact acceptance scenarios
 
-**Levels:** unit (controller/data checks with temporary files and synthetic Git repositories), smoke (CLI/package), integration (real independent-process Git capture or Docker), live (opt-in model), e2e (full clean-run and agent benchmark). Real integration must not be faked with monkeypatching. CI covers unit/smoke, `test_source_capture.py` and a separate Docker job; live tests remain opt-in. Git fixture commits are synthetic temporary repositories, never the workspace repository.
+**Levels:** unit (controller/data checks with temporary files and synthetic Git repositories), smoke (CLI/package), integration (real independent-process Git capture or Docker), live (opt-in model), e2e (full clean-run and agent benchmark). Integration must exercise real Git/Docker behavior; transport substitutions must be explicitly identified. CI covers unit/smoke, non-Docker integration (including GitHub sources) and a separate Docker job; live tests remain opt-in. Git fixture commits are synthetic temporary repositories, never the workspace repository.
 
 | ID | Test/claim | Phase | Evidence |
 |---|---|---|---|

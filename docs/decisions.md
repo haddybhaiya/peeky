@@ -76,3 +76,28 @@ Bind passport guidance to exact source/evidence/run/image using local HMAC. Free
 ## ADR-015: Summary exports preserve uncertainty and private source evidence
 
 Add one bounded report command over explicitly selected local HMAC audit/pair/study records. No execution, model request, source refresh or automatic transitive path traversal. Write exclusive JSON/Markdown and bind exact LF bytes. Export selected provenance and outcomes; omit raw prompts/logs, absolute host paths and credentials. Incomplete recorded PASS becomes INCONCLUSIVE. Keep source logs and original signed records in a separately labeled private review bundle with entry hashes; never include the private key or equate checksums with public attestation. The video and organizer eligibility gates remain explicit, not assumed complete from local packaging.
+
+## ADR-016: Public GitHub inspection through metadata-only temporary Git storage
+
+The owner authorized the first post-MVP URL-source PR. Accept explicit public
+GitHub repository roots and resolve default/branch/tag inputs once to a full SHA;
+fetch that SHA without checkout, recursive submodules or credentials. Ref-name
+ambiguity is an error. Transport is HTTPS-only with TLS verification, no redirects,
+global/system Git configuration, credential helpers, hooks or inherited Git
+overrides. This uses the standard library and installed trusted Git, adding no
+runtime dependencies or SDK.
+
+Reuse object verification and source limits through a metadata-only capture mode
+that requires no files outside `.git`. Local capture still requires clean working
+files/index. Shared export code preserves identical source and plan identities
+for the same commit. Add `remote` provenance only to URL inspection JSON; inspection
+schema 1.1 and authenticated audit schema 1.2 remain distinct and unchanged.
+No URL target execution or passport is enabled in this PR.
+
+Resource limits are monitored abort thresholds, not hard quotas. Temporary data
+is cleaned on ordinary exception unwinding and POSIX helper processes share an
+owned process group. Hard host/controller termination and other-platform behavior
+remain limitations. Deterministic integration uses real Git with an explicitly
+substituted local transport; separate live public GitHub inspections were observed.
+The baseline empty-`.git` marker regression now gets a precise local-repository
+error without weakening the existing rejection test.
