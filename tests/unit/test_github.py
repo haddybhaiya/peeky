@@ -1,12 +1,14 @@
 """Public GitHub URL/ref boundaries; no external network required."""
 
 import os
+import subprocess
 import sys
 from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
 
+from peeky import github
 from peeky.github import (
     FetchLimits,
     _git_command,
@@ -219,3 +221,26 @@ def test_commit_mismatch_cleans_up(monkeypatch: pytest.MonkeyPatch) -> None:
         with fetched_repository("https://github.com/o/r", "a" * 40):
             pytest.fail("Mismatched source was exposed")
     assert directories and all(not path.exists() for path in directories)
+
+
+def test_cancellation_reaps_owned_git_process(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original_stop = github._stop
+    stopped: list[subprocess.Popen[bytes]] = []
+
+    def stop(process: subprocess.Popen[bytes]) -> None:
+        stopped.append(process)
+        original_stop(process)
+
+    def interrupt(*args: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(
+        github, "_git_command", lambda *args: [sys.executable, "-c", "import time; time.sleep(30)"]
+    )
+    monkeypatch.setattr(github, "_check_limits", interrupt)
+    monkeypatch.setattr(github, "_stop", stop)
+    with pytest.raises(KeyboardInterrupt):
+        _run_git(tmp_path)
+    assert len(stopped) == 1 and stopped[0].returncode is not None

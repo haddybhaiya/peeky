@@ -172,6 +172,26 @@ def _stop(process: subprocess.Popen[bytes]) -> None:
 DEFAULT_FETCH_LIMITS = FetchLimits()
 
 
+def _storage_size(root: Path) -> int:
+    total = 0
+    for path in root.rglob("*"):
+        try:
+            if path.is_file():
+                total += path.stat().st_size
+        except FileNotFoundError:
+            # Git atomically renames temporary packs during a fetch. The next
+            # observation, including the final one, counts their destination.
+            continue
+    return total
+
+
+def _check_limits(root: Path, streams: tuple[int, int], limits: FetchLimits) -> None:
+    if _storage_size(root) > limits.max_storage_bytes:
+        raise SourceError("GitHub fetch exceeded temporary Git storage limit")
+    if any(os.fstat(descriptor).st_size > limits.max_output_bytes for descriptor in streams):
+        raise SourceError("GitHub fetch exceeded diagnostic output limit")
+
+
 def _run_git(root: Path, *args: str, limits: FetchLimits = DEFAULT_FETCH_LIMITS) -> bytes:
     """Monitor owned Git storage/output and wall time; never print server diagnostics."""
     command = _git_command(root, *args)
@@ -188,19 +208,14 @@ def _run_git(root: Path, *args: str, limits: FetchLimits = DEFAULT_FETCH_LIMITS)
         ) as process:
             try:
                 while True:
-                    size = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
-                    if size > limits.max_storage_bytes:
-                        raise SourceError("GitHub fetch exceeded temporary Git storage limit")
-                    if any(
-                        os.fstat(stream.fileno()).st_size > limits.max_output_bytes
-                        for stream in (stdout, stderr)
-                    ):
-                        raise SourceError("GitHub fetch exceeded diagnostic output limit")
+                    _check_limits(root, (stdout.fileno(), stderr.fileno()), limits)
                     if time.monotonic() >= deadline:
                         raise SourceError("GitHub fetch timed out; retry with a smaller repository")
                     if process.poll() is not None:
                         break
                     time.sleep(0.02)
+                # A fast child may finish writing between measurement and poll.
+                _check_limits(root, (stdout.fileno(), stderr.fileno()), limits)
                 if process.returncode != 0:
                     raise SourceError(
                         "GitHub source unavailable: check the public URL/ref, network and Git TLS setup; "
@@ -213,7 +228,7 @@ def _run_git(root: Path, *args: str, limits: FetchLimits = DEFAULT_FETCH_LIMITS)
                 return output
             finally:
                 # Also reap helper processes when cancellation interrupts a fetch.
-                if process.poll() is None:
+                if os.name == "posix" or process.poll() is None:
                     _stop(process)
 
 
