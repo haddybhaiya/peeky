@@ -8,6 +8,8 @@ import signal
 import subprocess
 import tempfile
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -204,8 +206,96 @@ def _run_git(root: Path, *args: str, limits: FetchLimits = DEFAULT_FETCH_LIMITS)
                         "private repositories, redirects and credential prompts are unsupported"
                     )
                 stdout.seek(0)
-                return stdout.read(limits.max_output_bytes + 1)
+                output = stdout.read(limits.max_output_bytes + 1)
+                if len(output) > limits.max_output_bytes:
+                    raise SourceError("GitHub fetch exceeded diagnostic output limit")
+                return output
             finally:
                 # Also reap helper processes when cancellation interrupts a fetch.
                 if process.poll() is None:
                     _stop(process)
+
+
+@dataclass(frozen=True)
+class RemoteSource:
+    url: str
+    requested_ref: str | None
+    resolved_ref: str | None
+    git_commit: str
+
+
+def _resolve(
+    root: Path, repository: GitHubRepository, ref: str | None, limits: FetchLimits
+) -> RemoteSource:
+    if ref is not None and re.fullmatch(r"[a-f0-9]{40}", ref):
+        return RemoteSource(repository.url, ref, None, ref)
+    if ref is None or ref == "HEAD":
+        patterns = ["HEAD"]
+    elif ref.startswith("refs/"):
+        patterns = [ref, ref + "^{}"] if ref.startswith("refs/tags/") else [ref]
+    else:
+        patterns = [f"refs/heads/{ref}", f"refs/tags/{ref}", f"refs/tags/{ref}^{{}}"]
+    output = _run_git(
+        root, "ls-remote", "--symref", "--exit-code", "--", repository.url, *patterns, limits=limits
+    )
+    records: dict[str, str] = {}
+    default_ref: str | None = None
+    try:
+        for line in output.decode("ascii").splitlines():
+            value, name = line.split("\t")
+            if name == "HEAD" and value.startswith("ref: refs/heads/"):
+                default_ref = value.removeprefix("ref: ")
+            elif name in patterns and re.fullmatch(r"[a-f0-9]{40}", value):
+                if name in records:
+                    raise ValueError("Duplicate advertised ref")
+                records[name] = value
+            else:
+                raise ValueError("Unexpected advertised ref")
+    except (ValueError, UnicodeError) as exc:
+        raise SourceError("Invalid GitHub ref advertisement") from exc
+    choices = [name for name in records if not name.endswith("^{}")]
+    if len(choices) != 1:
+        raise SourceError("GitHub ref missing or ambiguous; use refs/heads/NAME or refs/tags/NAME")
+    name = choices[0]
+    commit = records.get(name + "^{}", records[name])
+    return RemoteSource(repository.url, ref, default_ref if name == "HEAD" else name, commit)
+
+
+@dataclass(frozen=True)
+class FetchedRepository:
+    path: Path
+    remote: RemoteSource
+
+
+@contextmanager
+def fetched_repository(
+    url: str, ref: str | None = None, *, limits: FetchLimits = DEFAULT_FETCH_LIMITS
+) -> Iterator[FetchedRepository]:
+    """Fetch one resolved revision into controller-owned Git storage, without checkout."""
+    repository, selected_ref = parse_url(url), validate_ref(ref)
+    with tempfile.TemporaryDirectory(prefix="peeky-github-") as temporary:
+        root = Path(temporary)
+        _run_git(root, "init", "--template=", "-q", limits=limits)
+        remote = _resolve(root, repository, selected_ref, limits)
+        _run_git(
+            root,
+            "fetch",
+            "--quiet",
+            "--depth=1",
+            "--no-tags",
+            "--no-recurse-submodules",
+            "--no-auto-maintenance",
+            "--",
+            repository.url,
+            remote.git_commit,
+            limits=limits,
+        )
+        actual = (
+            _run_git(root, "rev-parse", "--verify", "FETCH_HEAD^{commit}", limits=limits)
+            .strip()
+            .decode("ascii")
+        )
+        if actual != remote.git_commit:
+            raise SourceError("Fetched GitHub commit differs from the resolved revision")
+        _run_git(root, "update-ref", "HEAD", remote.git_commit, limits=limits)
+        yield FetchedRepository(root, remote)

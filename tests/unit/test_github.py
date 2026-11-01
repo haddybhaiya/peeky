@@ -2,6 +2,7 @@
 
 import os
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,9 @@ from peeky.github import (
     FetchLimits,
     _git_command,
     _git_environment,
+    _resolve,
     _run_git,
+    fetched_repository,
     parse_url,
     validate_ref,
 )
@@ -134,3 +137,85 @@ def test_git_initialization_uses_real_git(tmp_path: Path) -> None:
     assert _run_git(tmp_path, "init", "--template=", "-q") == b""
     assert (tmp_path / ".git/HEAD").is_file()
     assert not (tmp_path / ".git/hooks").exists()
+
+
+@pytest.mark.parametrize(
+    ("ref", "advertisement", "expected_ref", "expected_sha"),
+    [
+        (None, f"ref: refs/heads/main\tHEAD\n{'a' * 40}\tHEAD\n", "refs/heads/main", "a" * 40),
+        ("topic", f"{'b' * 40}\trefs/heads/topic\n", "refs/heads/topic", "b" * 40),
+        (
+            "v1",
+            f"{'a' * 40}\trefs/tags/v1\n{'c' * 40}\trefs/tags/v1^{{}}\n",
+            "refs/tags/v1",
+            "c" * 40,
+        ),
+    ],
+)
+def test_refs_resolve_to_an_exact_commit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    ref: str | None,
+    advertisement: str,
+    expected_ref: str,
+    expected_sha: str,
+) -> None:
+    monkeypatch.setattr("peeky.github._run_git", lambda *args, **kwargs: advertisement.encode())
+    remote = _resolve(tmp_path, parse_url("https://github.com/o/r"), ref, FetchLimits())
+    assert remote.resolved_ref == expected_ref
+    assert remote.git_commit == expected_sha and remote.requested_ref == ref
+
+
+@pytest.mark.parametrize(
+    "advertisement",
+    [
+        f"{'a' * 40}\trefs/heads/main\n{'b' * 40}\trefs/tags/main\n",
+        "",
+        "not-a-sha\trefs/heads/main\n",
+        f"{'a' * 40}\trefs/heads/unrequested\n",
+        f"{'a' * 40}\trefs/heads/main\n{'a' * 40}\trefs/heads/main\n",
+    ],
+)
+def test_missing_ambiguous_and_invalid_advertisements(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, advertisement: str
+) -> None:
+    monkeypatch.setattr("peeky.github._run_git", lambda *args, **kwargs: advertisement.encode())
+    with pytest.raises(SourceError):
+        _resolve(tmp_path, parse_url("https://github.com/o/r"), "main", FetchLimits())
+
+
+@pytest.mark.parametrize("interrupt", [False, True])
+def test_temporary_fetch_lifecycle(monkeypatch: pytest.MonkeyPatch, interrupt: bool) -> None:
+    calls: list[tuple[str, ...]] = []
+
+    def transport(root: Path, *args: str, **kwargs: object) -> bytes:
+        calls.append(args)
+        if args[0] == "rev-parse":
+            return ("a" * 40 + "\n").encode()
+        return b""
+
+    monkeypatch.setattr("peeky.github._run_git", transport)
+    with pytest.raises(KeyboardInterrupt) if interrupt else nullcontext():
+        with fetched_repository("https://github.com/o/r", "a" * 40) as fetched:
+            temporary = fetched.path
+            assert temporary.exists()
+            assert fetched.remote.git_commit == "a" * 40
+            if interrupt:
+                raise KeyboardInterrupt
+    assert not temporary.exists()
+    assert [args[0] for args in calls] == ["init", "fetch", "rev-parse", "update-ref"]
+    assert calls[1][-1] == "a" * 40 and "--depth=1" in calls[1]
+
+
+def test_commit_mismatch_cleans_up(monkeypatch: pytest.MonkeyPatch) -> None:
+    directories: list[Path] = []
+
+    def transport(root: Path, *args: str, **kwargs: object) -> bytes:
+        directories.append(root)
+        return ("b" * 40).encode() if args[0] == "rev-parse" else b""
+
+    monkeypatch.setattr("peeky.github._run_git", transport)
+    with pytest.raises(SourceError, match="differs"):
+        with fetched_repository("https://github.com/o/r", "a" * 40):
+            pytest.fail("Mismatched source was exposed")
+    assert directories and all(not path.exists() for path in directories)
