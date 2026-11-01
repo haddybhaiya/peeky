@@ -257,7 +257,9 @@ def _resolve(
     records: dict[str, str] = {}
     default_ref: str | None = None
     try:
-        for line in output.decode("ascii").splitlines():
+        for line in output.decode("utf-8").split("\n"):
+            if not line:
+                continue
             value, name = line.split("\t")
             if name == "HEAD" and value.startswith("ref: refs/heads/"):
                 default_ref = value.removeprefix("ref: ")

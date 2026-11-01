@@ -89,8 +89,9 @@ def test_branches_tags_and_missing_refs(
 ) -> None:
     commit = fingerprint(repo).git_commit
     git(repo, "branch", "topic")
+    git(repo, "branch", "feature/añadir")
     git(repo, "tag", "-a", "v1", "-m", "annotated fixture tag")
-    for ref in ("topic", "refs/heads/topic", "v1", "refs/tags/v1", commit):
+    for ref in ("topic", "refs/heads/topic", "feature/añadir", "v1", "refs/tags/v1", commit):
         with github.github_snapshot(URL, ref) as captured:
             assert captured.source.identity.git_commit == commit
             assert captured.remote.requested_ref == ref

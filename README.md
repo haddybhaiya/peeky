@@ -6,6 +6,22 @@
 
 This kit borrows the **documentation-first engineering discipline** of `haddybhaiya/recheck-`: same general Hatchling/pytest/ruff/mypy `pyproject.toml` pattern, phase-gated implementation, explicit safety boundaries, credential-free checks and auditable evidence. It does not copy Recheck's domain logic.
 
+## Inspect a public GitHub URL
+
+Preview a public repository without managing a local clone:
+
+```bash
+peeky inspect https://github.com/OWNER/REPO
+peeky inspect https://github.com/OWNER/REPO --ref main --json
+```
+
+Peeky fetches an exact commit into temporary Git storage, verifies source objects
+and previews opted-in README commands without checkout or target execution. JSON
+includes the canonical URL, requested ref and resolved commit. No Docker or API key
+is required for inspection. Exit 2 means no opted-in commands were found.
+URL audits are the next increment; execution commands currently use local sources.
+See [supported URLs, ref rules and limits](docs/github-sources.md).
+
 ## BYOK Gemma README repair
 
 Bring your own Google AI Studio key using the ignored `.env` and the settings in `.env.example`. The selected checkpoint is `gemma-4-31b-it`, an open-weight instruction-tuned Gemma model with coding capabilities. It is used through Google's OpenAI-compatible endpoint, with no proprietary Gemini fallback. Deterministic tests need no key. Set `PEEKY_MODEL_CONSENT=true` only after reviewing the bounded redacted disclosure.
@@ -48,7 +64,7 @@ uv sync --locked
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy src tests
-uv run --locked pytest tests/unit tests/smoke tests/integration/test_source_capture.py -m 'not live and not docker'
+uv run --locked pytest tests/unit tests/smoke tests/integration -m 'not live and not docker'
 uv run --locked python scripts/check_docs.py
 uv build --wheel
 uv run --locked python scripts/smoke_wheel.py
@@ -66,7 +82,7 @@ The [repository analysis](docs/repository-analysis.md) records the current imple
 
 ## CLI contracts
 
-- `peeky inspect PATH [--json]`: capture committed source and extract **opted-in** fenced `bash peeky` commands as a proposal; never run them. JSON is now an object containing `source`, `policy_sha256`, `run` and `steps`, replacing the scaffold's bare step list.
+- `peeky inspect PATH_OR_GITHUB_URL [--ref REF] [--json]`: capture committed source and extract **opted-in** fenced `bash peeky` commands as a proposal; never run them. `--ref` selects a GitHub branch/tag/full SHA and is URL-only. JSON contains `source`, `policy_sha256`, `run` and `steps`, plus `remote` for URL inputs.
 - `peeky doctor [--json]`: check whether Docker CLI/daemon is available; never install Docker.
 - `peeky audit PATH --approve [--image IMAGE] [--output DIR]`: execute exactly one permitted smoke command in Docker. Default image is the reviewed immutable digest in `src/peeky/images.py`; mutable tags and unreviewed digests are blocked. Returns 0 for PASS, 1 for observed target FAIL, 2 for a pre-execution policy/no-op block, and 3 for unavailable/ambiguous infrastructure.
 - `peeky passport PATH --evidence FILE [--output FILE]`: generate **unmerged** candidate `AGENTS.generated.md` only from controller-authenticated schema 1.2 evidence bound to the current clean commit, source, policy and finalized plan. Legacy schemas are rejected; rerun the audit. Local HMAC integrity is not a public signature or independent third-party execution attestation.
