@@ -47,6 +47,28 @@ def main() -> int:
         subprocess.run([python, "-I", "-m", "peeky", "--version"], check=True, cwd=tmp, env=env)
         cli = str(venv_dir / bindir / ("peeky.exe" if os.name == "nt" else "peeky"))
         subprocess.run([cli, "--version"], check=True, cwd=tmp, env=env)
+        inspect_help = subprocess.run(
+            [cli, "inspect", "--help"],
+            check=True,
+            cwd=tmp,
+            env=env,
+            capture_output=True,
+            text=True,
+        ).stdout
+        assert "--ref" in inspect_help and "GitHub" in inspect_help
+        # Import the URL support from the installed artifact, outside the checkout.
+        subprocess.run(
+            [
+                python,
+                "-I",
+                "-c",
+                "from peeky.github import parse_url; "
+                "assert parse_url('https://github.com/o/r.git').url == 'https://github.com/o/r'",
+            ],
+            check=True,
+            cwd=tmp,
+            env=env,
+        )
         subprocess.run(
             [cli, "inspect", str(ROOT / "tests/fixtures/good_repo")], check=True, cwd=tmp, env=env
         )
