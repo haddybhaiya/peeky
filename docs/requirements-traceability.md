@@ -95,3 +95,16 @@ Synthetic provider responses in integration exercise the actual runner, not remo
 - T-037: actual-value captions, static retained-evidence display and original records prepared. **Actual demo video and submission completed, confirmed by the owner**; final duration/content not independently inspected. Prepared HTML/captions are not substituted for the actual video.
 
 The current organizer page also requires Alan + open models, conflicting with earlier optional-Alan Town Hall notes. Google-hosted Gemma use is evidenced; Alan use is not. This was a preparation-time eligibility question. The owner subsequently completed submission. Phase 5 delivery is complete per that confirmation; organizer acceptance is not inferred.
+
+## Post-MVP GitHub inspection mapping
+
+GH-001..GH-008 are defined and mapped to concrete suites in
+[GitHub source acceptance checks](github-sources.md#acceptance-checks).
+`tests/unit/test_github.py` covers URL/ref inputs, trusted transport, resource
+errors and process cancellation. `tests/integration/test_github_source.py` uses
+real Git fetches through an explicitly substituted local transport, including
+annotated/Unicode refs, moving branches, denial paths, identity and cleanup.
+`test_source_capture.py` adds metadata-only identity/symlink checks; CLI smoke
+rejects unsupported inputs before network/execution. The installed-wheel smoke
+imports the packaged resolver and checks `inspect --help` outside the checkout.
+Existing Docker/evidence/passport gates remain required regressions.

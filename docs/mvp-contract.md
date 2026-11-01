@@ -25,6 +25,11 @@ Arbitrary GitHub remote execution, authenticated GitHub writes, auto-opening PRs
 
 ## Honest statuses
 
+**Post-MVP amendment (2026-11-01):** the owner separately authorized the first PR
+for public GitHub URL resolution and read-only inspection. GH-001..GH-008 in
+`github-sources.md` define that increment. The historical hackathon scope above
+remains intact; URL audit execution and cloud providers are later work.
+
 `PASS` means the exact listed offline commands passed under recorded run conditions. `FAIL` means at least one permitted check returned a nonzero error with sufficient observation. `INCONCLUSIVE` means missing setup steps, environment failure, timeout, skipped check, model uncertainty or unsuitable oracle. `BLOCKED` is a policy gate before execution. No "repository reproducible" universal claim from one smoke command.
 
 ## Submission gate

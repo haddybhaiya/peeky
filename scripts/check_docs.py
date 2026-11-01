@@ -23,6 +23,7 @@ REQUIRED = [
     "docs/phase3-repair.md",
     "docs/phase4-onboarding.md",
     "docs/phase5-review.md",
+    "docs/github-sources.md",
 ]
 
 

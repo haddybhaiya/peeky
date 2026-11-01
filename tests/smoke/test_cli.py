@@ -98,3 +98,30 @@ def test_T004_rejected_command_never_reaches_docker(
     monkeypatch.setattr("peeky.cli.doctor", forbidden)
     monkeypatch.setattr("peeky.cli.execute", forbidden)
     assert main(["audit", str(repo), "--approve"]) == 2
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        (["inspect", "https://github.com/o/r/tree/main"], "repository root"),
+        (["inspect", "https://example.com/o/r"], "repository root"),
+        (["inspect", "https://github.com/o/r", "--ref=main~1"], "--ref"),
+        (["inspect", "local-path", "--ref=main"], "URL inspection"),
+        (["audit", "https://github.com/o/r", "--approve"], "inspect only"),
+    ],
+)
+def test_unsupported_remote_inputs_never_fetch_or_execute(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    arguments: list[str],
+    message: str,
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Invalid input triggered fetching, capture or execution")
+
+    monkeypatch.setattr("peeky.github._run_git", forbidden)
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    assert main(arguments) == 3
+    output = capsys.readouterr()
+    assert message in output.err and output.out == ""

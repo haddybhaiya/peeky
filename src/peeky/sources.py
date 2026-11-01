@@ -193,6 +193,8 @@ def _repo_root(selected: Path) -> Path:
             info = marker.lstat()
             if _linked(info) or not stat.S_ISDIR(info.st_mode):
                 raise SourceError("Linked worktrees and redirected Git directories are unsupported")
+            if not (marker / "HEAD").is_file():
+                raise SourceError("Source must belong to a local Git repository with readable HEAD")
             return candidate
     raise SourceError("Source must belong to a local Git repository")
 
@@ -221,9 +223,13 @@ def _secret_path(path: str) -> bool:
     )
 
 
-def _capture(repo: Path, policy: RunPolicy) -> tuple[SourceIdentity, dict[str, bytes]]:
+def _capture(
+    repo: Path, policy: RunPolicy, *, committed_only: bool = False
+) -> tuple[SourceIdentity, dict[str, bytes]]:
     selected = safe_root(repo)
     root = _repo_root(selected)
+    if committed_only and (selected != root or any(p.name != ".git" for p in root.iterdir())):
+        raise SourceError("Object-only capture requires a metadata-only repository root")
     scope = selected.relative_to(root).as_posix()
     if scope != ".":
         safe_relative(scope)
@@ -266,12 +272,13 @@ def _capture(repo: Path, policy: RunPolicy) -> tuple[SourceIdentity, dict[str, b
             total += len(data)
             if total > policy.max_source_bytes:
                 raise SourceError("Total source byte limit exceeded")
-            if not _equivalent(read_regular(selected, rel, policy.max_file_bytes), data):
-                raise SourceError("Dirty source bytes differ from the recorded commit")
-            if os.name != "nt" and bool((selected / rel).stat().st_mode & 0o111) != (
-                mode == "100755"
-            ):
-                raise SourceError("Dirty source executable mode")
+            if not committed_only:
+                if not _equivalent(read_regular(selected, rel, policy.max_file_bytes), data):
+                    raise SourceError("Dirty source bytes differ from the recorded commit")
+                if os.name != "nt" and bool((selected / rel).stat().st_mode & 0o111) != (
+                    mode == "100755"
+                ):
+                    raise SourceError("Dirty source executable mode")
             records.append(
                 SourceFile(rel, mode, "sha256:" + hashlib.sha256(data).hexdigest(), len(data))
             )
@@ -279,27 +286,33 @@ def _capture(repo: Path, policy: RunPolicy) -> tuple[SourceIdentity, dict[str, b
             expected_index[rel if scope == "." else f"{scope}/{rel}"] = (mode, child)
 
     walk(tree, "", 0)
-    pathspec = "." if scope == "." else scope + "/"
-    index_args = ("ls-files", "--stage", "-z", "--", pathspec)
-    index_before = _git(root, policy, *index_args)
-    index: dict[str, tuple[str, str]] = {}
-    try:
-        for entry in index_before.split(b"\0"):
-            if entry:
-                metadata, name = entry.split(b"\t", 1)
-                mode, oid, stage = metadata.decode("ascii").split()
-                if stage != "0" or name.decode("utf-8") in index:
-                    raise SourceError("Unmerged or duplicate index entries")
-                index[name.decode("utf-8")] = (mode, oid)
-    except (ValueError, UnicodeError) as exc:
-        raise SourceError("Invalid Git index entries") from exc
-    if index != expected_index:
-        raise SourceError("Staged source differs from the recorded commit")
-    if _git(root, policy, "ls-files", "--others", "--exclude-standard", "-z", "--", pathspec):
-        raise SourceError("Untracked source files must be committed or ignored")
-    head_after = _git(root, policy, "rev-parse", "--verify", "HEAD^{commit}", limit=100).strip()
-    if head_after.decode() != commit or _git(root, policy, *index_args) != index_before:
-        raise SourceError("Git revision or index changed during capture")
+    if not committed_only:
+        pathspec = "." if scope == "." else scope + "/"
+        index_args = ("ls-files", "--stage", "-z", "--", pathspec)
+        index_before = _git(root, policy, *index_args)
+        index: dict[str, tuple[str, str]] = {}
+        try:
+            for entry in index_before.split(b"\0"):
+                if entry:
+                    metadata, name = entry.split(b"\t", 1)
+                    mode, oid, stage = metadata.decode("ascii").split()
+                    if stage != "0" or name.decode("utf-8") in index:
+                        raise SourceError("Unmerged or duplicate index entries")
+                    index[name.decode("utf-8")] = (mode, oid)
+        except (ValueError, UnicodeError) as exc:
+            raise SourceError("Invalid Git index entries") from exc
+        if index != expected_index:
+            raise SourceError("Staged source differs from the recorded commit")
+        if _git(root, policy, "ls-files", "--others", "--exclude-standard", "-z", "--", pathspec):
+            raise SourceError("Untracked source files must be committed or ignored")
+        head_after = _git(root, policy, "rev-parse", "--verify", "HEAD^{commit}", limit=100).strip()
+        if head_after.decode() != commit or _git(root, policy, *index_args) != index_before:
+            raise SourceError("Git revision or index changed during capture")
+    elif (
+        _git(root, policy, "rev-parse", "--verify", "HEAD^{commit}", limit=100).strip().decode()
+        != commit
+    ):
+        raise SourceError("Git revision changed during object capture")
     if "README.md" not in contents:
         raise SourceError("Selected source requires a committed README.md")
     if len(contents["README.md"]) > policy.max_readme_bytes:
@@ -345,6 +358,26 @@ class SourceSnapshot:
 @contextmanager
 def snapshot(repo: Path, policy: RunPolicy = DEFAULT_POLICY) -> Iterator[SourceSnapshot]:
     identity, contents = _capture(repo, policy)
+    with _export_snapshot(identity, contents, _repo_root(safe_root(repo)), policy) as captured:
+        yield captured
+
+
+@contextmanager
+def _committed_snapshot(
+    repo: Path, expected_commit: str, policy: RunPolicy = DEFAULT_POLICY
+) -> Iterator[SourceSnapshot]:
+    """Internal remote-source path; consume verified objects without a worktree/index."""
+    identity, contents = _capture(repo, policy, committed_only=True)
+    if identity.git_commit != expected_commit:
+        raise SourceError("Captured GitHub revision differs from the resolved commit")
+    with _export_snapshot(identity, contents, repo, policy) as captured:
+        yield captured
+
+
+@contextmanager
+def _export_snapshot(
+    identity: SourceIdentity, contents: dict[str, bytes], origin: Path, policy: RunPolicy
+) -> Iterator[SourceSnapshot]:
     with tempfile.TemporaryDirectory(prefix="peeky-source-") as temporary:
         exported = Path(temporary) / "repo"
         exported.mkdir()
@@ -353,7 +386,7 @@ def snapshot(repo: Path, policy: RunPolicy = DEFAULT_POLICY) -> Iterator[SourceS
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(contents[item.path])
             target.chmod(0o555 if item.mode == "100755" else 0o444)
-        captured = SourceSnapshot(exported, identity, _EXPORT_TOKEN, _repo_root(safe_root(repo)))
+        captured = SourceSnapshot(exported, identity, _EXPORT_TOKEN, origin)
         captured.verify(policy)
         for directory in sorted(
             (p for p in exported.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True
