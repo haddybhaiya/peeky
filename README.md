@@ -4,7 +4,6 @@
 
 **Status:** Development MVP with restricted Docker audits, opt-in BYOK Gemma README repair, authenticated candidate passports and a native-tool onboarding harness. Phase 3's genuine proposal and human-approved fresh Docker recheck passed; corrected prerequisite CI succeeded. Phase 4's live comparison is **blocked by provider API errors**: five of six Gemma requests returned HTTP 500 before tool execution. One passport-assisted attempt completed the real Docker check successfully; no complete matched pair is available. Phase 5's reports, documentation and local checks are complete. **The demo video and OpenFire submission are complete, as confirmed by the project owner.** Submission completion does not change the recorded benchmark outcome. See [work review](docs/work_review.md) and [final review](docs/phase5-review.md).
 
-This kit borrows the **documentation-first engineering discipline** of `haddybhaiya/recheck-`: same general Hatchling/pytest/ruff/mypy `pyproject.toml` pattern, phase-gated implementation, explicit safety boundaries, credential-free checks and auditable evidence. It does not copy Recheck's domain logic.
 
 ## Inspect a public GitHub URL
 
