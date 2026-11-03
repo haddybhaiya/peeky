@@ -10,28 +10,12 @@ import pytest
 from peeky import github
 from peeky.cli import main
 from peeky.domain import DEFAULT_POLICY
+from peeky.images import DEFAULT_IMAGE
+from peeky.repair import load_record
 from peeky.sources import SourceError, fingerprint
 
 pytestmark = pytest.mark.integration
 URL = "https://github.com/fixture/project"
-
-
-@pytest.fixture
-def local_transport(repo: Path, monkeypatch: pytest.MonkeyPatch) -> list[Path]:
-    original = github._git_command
-    roots: list[Path] = []
-
-    def command(root: Path, *args: str) -> list[str]:
-        roots.append(root)
-        trusted = original(root, *args)
-        prefix = trusted[: -len(args)]
-        # The test alone substitutes a local repository for the approved HTTPS URL.
-        # The production URL validator and transport never allow file protocols.
-        translated = [str(repo) if value == URL else value for value in args]
-        return [*prefix, "-c", "protocol.file.allow=always", *translated]
-
-    monkeypatch.setattr(github, "_git_command", command)
-    return roots
 
 
 @pytest.mark.parametrize("interrupt", [False, True])
@@ -234,4 +218,46 @@ def test_cli_empty_plan_and_readable_provenance(
     assert f"Repository: {URL}" in output.out
     assert "Proposed steps: 0 (never executed)" in output.out
     assert "PASS" not in output.out and not output.err
+    assert all(not path.exists() for path in local_transport)
+
+
+@pytest.mark.parametrize(
+    ("readme", "image", "reason"),
+    [
+        ("# No opted-in command\n", DEFAULT_IMAGE, "NO_OPTED_IN_COMMANDS"),
+        (
+            "```bash peeky\npython smoke.py\npython smoke.py\n```\n",
+            DEFAULT_IMAGE,
+            "MULTI_STEP_UNSUPPORTED",
+        ),
+        ("```bash peeky\npython smoke.py; echo unsafe\n```\n", DEFAULT_IMAGE, "Shell composition"),
+        ("```bash peeky\npython smoke.py\n```\n", "python:latest", "reviewed, cached"),
+    ],
+)
+def test_url_audit_policy_blocks_preserve_authenticated_origin_without_execution(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    readme: str,
+    image: str,
+    reason: str,
+) -> None:
+    (repo / "README.md").write_text(readme)
+    git(repo, "add", "README.md")
+    git(repo, "commit", "-qm", "blocked audit fixture")
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Policy-denied URL audit reached Docker")
+
+    monkeypatch.setattr("peeky.cli.doctor", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    output = tmp_path / "blocked-url"
+    assert main(["audit", URL, "--approve", "--image", image, "--output", str(output)]) == 2
+    record = load_record(next(output.glob("*.json")))
+    assert record["repo"] == URL and record["remote"]["url"] == URL
+    assert reason in record["reason"]
+    assert record["results"] == [] and record["run"]["state"] == "BLOCKED"
+    assert record["verdict"] == "INCONCLUSIVE"
     assert all(not path.exists() for path in local_transport)

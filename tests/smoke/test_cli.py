@@ -135,3 +135,31 @@ def test_url_audit_without_approval_never_fetches(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr("peeky.cli.snapshot", forbidden)
     monkeypatch.setattr("peeky.cli.execute", forbidden)
     assert main(["audit", "https://github.com/o/r", "--ref", "main"]) == 2
+
+
+def test_url_audit_fetch_failure_does_not_invent_source_or_execute(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from peeky.sources import SourceError
+
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise SourceError("GitHub source unavailable")
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Failed fetch reached Docker or local fallback")
+
+    monkeypatch.setattr("peeky.github._run_git", unavailable)
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    output = tmp_path / "no-captured-source"
+    assert main(["audit", "https://github.com/o/r", "--approve", "--output", str(output)]) == 3
+    assert "source unavailable" in capsys.readouterr().err
+    assert not output.exists()
+
+
+def test_local_audit_rejects_remote_ref_before_capture(monkeypatch: pytest.MonkeyPatch) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Local --ref triggered capture")
+
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    assert main(["audit", "local-repo", "--ref", "main", "--approve"]) == 3
