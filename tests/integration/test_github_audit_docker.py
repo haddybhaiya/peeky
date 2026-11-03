@@ -10,12 +10,14 @@ from pathlib import Path
 
 import pytest
 
+from peeky import cli, runner
 from peeky.cli import main
 from peeky.images import DEFAULT_IMAGE
+from peeky.models import Step, StepResult
 from peeky.provenance import verify
 from peeky.repair import load_record
 from peeky.runner import LABEL, doctor, inspect_image
-from peeky.sources import fingerprint
+from peeky.sources import SourceSnapshot, fingerprint
 
 pytestmark = [pytest.mark.integration, pytest.mark.docker]
 URL = "https://github.com/fixture/project"
@@ -32,13 +34,13 @@ def url_docker() -> str:
 
 
 def assert_container_and_sources_removed(
-    binary: str, record: dict[str, object], roots: list[Path]
+    binary: str, record: dict[str, object], roots: list[Path], *, cleanup_verified: bool = True
 ) -> None:
     # Inspect the retained raw provenance, then independently query the daemon.
     results = record["results"]
     assert isinstance(results, list)
     provenance = results[0]["provenance"]
-    assert provenance["cleanup_verified"] is True
+    assert provenance["cleanup_verified"] is cleanup_verified
     probe = subprocess.run(
         [binary, "ps", "--all", "--quiet", "--filter", f"label={LABEL}={provenance['run_id']}"],
         capture_output=True,
@@ -47,11 +49,10 @@ def assert_container_and_sources_removed(
         timeout=8,
     )
     assert not probe.stdout.strip()
-    mount = next(
-        value for value in provenance["docker_create_argv"] if value.startswith("type=bind,")
-    )
-    exported = Path(mount.split("source=", 1)[1].split(",target=", 1)[0])
-    assert not exported.exists()
+    for mount in provenance.get("docker_create_argv", []):
+        if mount.startswith("type=bind,"):
+            exported = Path(mount.split("source=", 1)[1].split(",target=", 1)[0])
+            assert not exported.exists()
     assert roots and all(not root.exists() for root in roots)
 
 
@@ -106,3 +107,78 @@ def test_url_audit_real_pass_fail_and_durable_evidence(
     assert summary["records"][0]["remote"] == record["remote"]
     assert summary["records"][0]["outcome"] == record["verdict"]
     assert "peeky-source-" not in json.dumps(summary)
+
+
+def test_url_timeout_is_not_a_target_failure(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    url_docker: str,
+) -> None:
+    (repo / "smoke.py").write_text("import time\ntime.sleep(60)\n")
+    git(repo, "add", "smoke.py")
+    git(repo, "commit", "-qm", "URL timeout fixture")
+
+    def shorter_deadline(
+        step: Step, source: SourceSnapshot, image: str, timeout: float
+    ) -> StepResult:
+        # Exercise the real runner with a lower permitted deadline, not a fake outcome.
+        return runner.execute(step, source, image, timeout=0.5)
+
+    monkeypatch.setattr(cli, "execute", shorter_deadline)
+    output = tmp_path / "timeout"
+    assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
+    record = load_record(next(output.glob("*.json")))
+    assert record["verdict"] == "INCONCLUSIVE"
+    assert record["results"][0]["outcome"] == "TIMEOUT"
+    assert record["results"][0]["reason"] == "COMMAND_TIMEOUT"
+    assert_container_and_sources_removed(url_docker, record, local_transport)
+
+
+def test_url_cleanup_acknowledgement_failure_cannot_pass(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    url_docker: str,
+) -> None:
+    (repo / "smoke.py").write_text("print('URL_CLEANUP_FIXTURE')\n")
+    git(repo, "add", "smoke.py")
+    git(repo, "commit", "-qm", "URL cleanup fixture")
+    original = runner._cleanup
+
+    def uncertain(binary: str, name: str, run_id: str) -> bool:
+        # Remove the actual owned container, then simulate a lost cleanup acknowledgement.
+        assert original(binary, name, run_id)
+        return False
+
+    monkeypatch.setattr(runner, "_cleanup", uncertain)
+    output = tmp_path / "cleanup"
+    assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
+    record = load_record(next(output.glob("*.json")))
+    assert record["verdict"] == "INCONCLUSIVE"
+    assert record["results"][0]["reason"] == "CLEANUP_UNVERIFIED"
+    assert_container_and_sources_removed(
+        url_docker, record, local_transport, cleanup_verified=False
+    )
+
+
+def test_url_daemon_loss_after_preflight_cannot_run_on_host(
+    local_transport: list[Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, url_docker: str
+) -> None:
+    output = tmp_path / "daemon-loss"
+    with monkeypatch.context() as changed:
+        # Preflight succeeds, but the real runner subsequently sees an unreachable daemon.
+        changed.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": True, "linux": True})
+        changed.delenv("DOCKER_CONTEXT", raising=False)
+        changed.setenv("DOCKER_HOST", "tcp://127.0.0.1:1")
+        assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
+    record = load_record(next(output.glob("*.json")))
+    provenance = record["results"][0]["provenance"]
+    assert record["verdict"] == "INCONCLUSIVE"
+    assert record["results"][0]["reason"] == "DOCKER_UNAVAILABLE"
+    assert provenance["target_started"] is False
+    assert_container_and_sources_removed(url_docker, record, local_transport)
