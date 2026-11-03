@@ -8,11 +8,11 @@ Input paths containing parent traversal, symlink/reparse ancestors or a non-dire
 
 ## Capture mechanics
 
-The local-source mechanics below remain unchanged. Public GitHub **inspection**
+The local-source mechanics below remain unchanged. Public GitHub inspection/audit
 also supports a private metadata-only repository fetched by the controller, with
 no checkout/index. It verifies the same raw objects and uses the same export and
 source limits; see [GitHub source capture](github-sources.md). URLs are currently
-accepted by `inspect` only. This post-MVP path explicitly enables HTTPS fetching
+accepted by `inspect` and approved `audit`. This post-MVP path enables HTTPS fetching
 before capture; object reads themselves continue to deny protocols/lazy fetching.
 
 The controller resolves HEAD to a full commit ID and reads raw commit, tree and blob objects through Git plumbing. It recomputes each consumed object's Git hash, including SHA-1 or SHA-256 object headers. It does not checkout, run archive filters, initialize submodules, fetch, install or import target material. Git environment overrides and global/system config are excluded, hooks/fsmonitor are disabled, lazy fetching is disabled and protocols are denied. Host-tool discovery excludes current-directory, relative and target-tree candidates so repository files cannot impersonate Git/Docker. Local Git configuration is not interpreted as controller policy. Git subprocess output and duration are bounded.

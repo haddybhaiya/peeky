@@ -2,6 +2,11 @@
 
 ## Preparation and execution boundary
 
+Post-MVP GitHub URL audits use this same local runner after controller-only HTTPS
+source acquisition. Target networking remains disabled. The URL and exact root
+commit are authenticated in durable evidence; temporary source storage closes
+before publication. See `github-sources.md` for supported inputs and failure rules.
+
 The reviewed default is official Python `python@sha256:12316debbfb86890f6b2d825820612741ba527ad5a44e3902759141d572bfe8f`. It was prefetched from `library/python:3.12-slim` on 2026-10-27 and observed locally as Linux/amd64. Source, policy and the exact requested/resolved image identity are recorded per run. The image allowlist is controller code, not README/model/config input. To change it, review and update the constant, policy/CI/docs and real gates together.
 
 Image download is a separate trusted setup operation. Audit uses the cache only (`--pull=never`) and refuses mutable tags or unreviewed digests. Before creating a container, it confirms the requested RepoDigest, immutable image ID, Linux OS and absence of image-declared volumes. No arbitrary dependency download, package install or online target setup is supported.

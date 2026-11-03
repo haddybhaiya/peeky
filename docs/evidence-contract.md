@@ -2,6 +2,14 @@
 
 Schema `1.2`: `repo`, `readme_sha256`, `source`, `policy`, `policy_sha256`, `run`, `image`, `image_digest`, `execution`, `coverage`, `steps[]`, `results[]`, `verdict`, `limitations` and controller `integrity` after storage. Source/policy/plan identity retains the Phase 1 canonical hashing contract. Execution is `offline-docker-single-command`. Legacy passport schemas must be rerun.
 
+Post-MVP URL audits add `remote` (canonical URL, requested/resolved ref, commit)
+and use the canonical GitHub URL for `repo`. Root scope, ref selection and commit
+must agree with the captured source. All origin fields are authenticated along
+with the record; local audit shape and schema version remain compatible. Records
+are finalized after temporary-source contexts close. Fetch/capture failures that
+never establish a source return diagnostics without fabricated evidence.
+Summary exports validate/preserve URL provenance; URL passports remain unsupported.
+
 Each result contains ordered step ID/command, observed target exit code (absent when no target exit was observed), full bounded redacted stdout/stderr, outcome, duration, reason and runtime provenance. Provenance includes requested/resolved digest, actual image/container IDs, source/policy hashes, controller start/end UTC and deadline, actual Docker State, inspected isolation, create argv, redacted transcript hashes, raw input byte counts, completeness and verified owned cleanup. Target code cannot edit these controller-owned observations. Exact controls and limits are in `phase2-runner.md`.
 
 PASS requires the permitted command's matching result and integer zero exit, resolved reviewed image, matching source/policy, complete logs, actual target start and verified cleanup. No-op, unsupported stages, missing image/daemon, missing executable, output/memory limits and ambiguous observations cannot pass. An actual target nonzero exit is FAIL, including 125/126/127 when State proves target execution. Timeout is retained as a step outcome and reduces to INCONCLUSIVE. A valid observed failure is not hidden by later incomplete coverage. Coverage counts planned versus observed result slots; observed coverage is not the same as successful execution. BLOCKED before execution is not target FAIL.
