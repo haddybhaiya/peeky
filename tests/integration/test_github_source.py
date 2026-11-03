@@ -1,18 +1,19 @@
 """Real Git fetch/capture with a local transport fixture; no live GitHub dependency."""
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from peeky import github
+from peeky import cli, github
 from peeky.cli import main
 from peeky.domain import DEFAULT_POLICY
 from peeky.images import DEFAULT_IMAGE
 from peeky.repair import load_record
-from peeky.sources import SourceError, fingerprint
+from peeky.sources import SourceError, SourceSnapshot, fingerprint
 
 pytestmark = pytest.mark.integration
 URL = "https://github.com/fixture/project"
@@ -261,3 +262,72 @@ def test_url_audit_policy_blocks_preserve_authenticated_origin_without_execution
     assert record["results"] == [] and record["run"]["state"] == "BLOCKED"
     assert record["verdict"] == "INCONCLUSIVE"
     assert all(not path.exists() for path in local_transport)
+
+
+def test_url_audit_missing_docker_retains_bound_evidence_after_source_cleanup(
+    repo: Path, local_transport: list[Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    expected = fingerprint(repo)
+    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Missing Docker reached target execution")
+
+    monkeypatch.setattr(cli, "execute", forbidden)
+    output = tmp_path / "missing-docker"
+    assert (
+        main(["audit", URL, "--ref", expected.git_commit, "--approve", "--output", str(output)])
+        == 3
+    )
+    assert all(not root.exists() for root in local_transport)
+    record = load_record(next(output.glob("*.json")))
+    assert record["source"]["git_commit"] == expected.git_commit
+    assert record["remote"]["requested_ref"] == expected.git_commit
+    assert record["run"]["state"] == "BLOCKED" and record["results"] == []
+    assert record["verdict"] == "INCONCLUSIVE" and record["repo"] == URL
+
+
+@pytest.mark.parametrize("interrupt", [False, True])
+def test_url_audit_execution_error_or_interrupt_cleans_source(
+    local_transport: list[Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interrupt: bool
+) -> None:
+    paths: list[Path] = []
+    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": True, "linux": True})
+
+    def interrupted(*args: object, **kwargs: object) -> None:
+        captured = args[1]
+        assert isinstance(captured, SourceSnapshot)
+        paths.append(captured.path)
+        assert captured.path.exists()
+        if interrupt:
+            raise KeyboardInterrupt
+        raise OSError("synthetic controller failure")
+
+    monkeypatch.setattr(cli, "execute", interrupted)
+    output = tmp_path / "interrupted"
+    if interrupt:
+        with pytest.raises(KeyboardInterrupt):
+            main(["audit", URL, "--approve", "--output", str(output)])
+    else:
+        assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
+    assert paths and all(not path.exists() for path in paths + local_transport)
+    assert not output.exists()
+
+
+def test_url_audit_does_not_publish_before_source_cleanup_completes(
+    local_transport: list[Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = github.github_snapshot
+
+    @contextmanager
+    def cleanup_failure(*args: str) -> Iterator[github.GitHubSnapshot]:
+        with original(*args) as captured:
+            yield captured
+        raise OSError("source cleanup could not be confirmed")
+
+    monkeypatch.setattr(cli, "github_snapshot", cleanup_failure)
+    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    output = tmp_path / "unconfirmed-cleanup"
+    assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
+    assert all(not path.exists() for path in local_transport)
+    assert not output.exists()

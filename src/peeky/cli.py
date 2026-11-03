@@ -110,6 +110,55 @@ def _print_inspection(captured: SourceSnapshot, remote: RemoteSource | None, as_
     return 0 if steps else 2
 
 
+def _audit_source(
+    captured: SourceSnapshot, repo: Path | RemoteSource, image: str
+) -> tuple[dict[str, object], int]:
+    """Observe the audit; finalize its record only after source contexts close."""
+    steps = read_steps(captured.path)
+    run = RunRecord(captured.identity, tuple(steps))
+    run.advance(RunState.INSPECTED)
+    reason = ""
+    try:
+        validate_run_image(image)
+        for step in steps:
+            safe_argv(step.command)
+        if not steps:
+            reason = "NO_OPTED_IN_COMMANDS"
+        elif len(steps) != DEFAULT_POLICY.max_audit_steps:
+            reason = "MULTI_STEP_UNSUPPORTED"
+    except PolicyError as exc:
+        reason = str(exc)
+    if reason:
+        run.advance(RunState.BLOCKED)
+        data = report(repo, image, steps, [], captured.identity, run, DEFAULT_POLICY)
+        data["reason"] = reason
+        print(f"No execution: {reason}", file=sys.stderr)
+        return data, 2
+    run.advance(RunState.APPROVED)
+    readiness = doctor(avoid=captured._origin)
+    if not readiness["docker_daemon"] or not readiness.get("linux"):
+        run.advance(RunState.BLOCKED)
+        data = report(repo, image, steps, [], captured.identity, run, DEFAULT_POLICY)
+        data["reason"] = "Docker daemon unavailable; no target execution"
+        print("Docker daemon unavailable; refusing host execution.", file=sys.stderr)
+        return data, 3
+    run.advance(RunState.SANDBOX_RUN)
+    results = []
+    for step in steps:
+        captured.verify()
+        result = execute(step, captured, image, timeout=DEFAULT_POLICY.command_timeout_seconds)
+        results.append(result)
+        print(f"{step.id}: {result.outcome}")
+        if result.outcome != "PASS":
+            break
+    captured.verify()
+    run.advance(RunState.OBSERVED)
+    run.advance(RunState.FINALIZED)
+    data = report(repo, image, steps, results, captured.identity, run, DEFAULT_POLICY)
+    code = 0 if data["verdict"] == "PASS" else 1 if data["verdict"] == "FAIL" else 3
+    return data, code
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -220,55 +269,11 @@ def main(argv: list[str] | None = None) -> int:
                 return _print_inspection(
                     captured, repo if isinstance(repo, RemoteSource) else None, args.json
                 )
-            steps = read_steps(captured.path)
-            run = RunRecord(captured.identity, tuple(steps))
-            run.advance(RunState.INSPECTED)
-            reason = ""
-            try:
-                validate_run_image(args.image)
-                for step in steps:
-                    safe_argv(step.command)
-                if not steps:
-                    reason = "NO_OPTED_IN_COMMANDS"
-                elif len(steps) != DEFAULT_POLICY.max_audit_steps:
-                    reason = "MULTI_STEP_UNSUPPORTED"
-            except PolicyError as exc:
-                reason = str(exc)
-            if reason:
-                run.advance(RunState.BLOCKED)
-                data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
-                data["reason"] = reason
-                print(f"Evidence: {write_report(data, args.output)}")
-                print(f"No execution: {reason}", file=sys.stderr)
-                return 2
-            run.advance(RunState.APPROVED)
-            readiness = doctor(avoid=captured._origin)
-            if not readiness["docker_daemon"] or not readiness.get("linux"):
-                run.advance(RunState.BLOCKED)
-                data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
-                data["reason"] = "Docker daemon unavailable; no target execution"
-                print(f"Evidence: {write_report(data, args.output)}")
-                print("Docker daemon unavailable; refusing host execution.", file=sys.stderr)
-                return 3
-            run.advance(RunState.SANDBOX_RUN)
-            results = []
-            for step in steps:
-                captured.verify()
-                result = execute(
-                    step, captured, args.image, timeout=DEFAULT_POLICY.command_timeout_seconds
-                )
-                results.append(result)
-                print(f"{step.id}: {result.outcome}")
-                if result.outcome != "PASS":
-                    break
-            captured.verify()
-            run.advance(RunState.OBSERVED)
-            run.advance(RunState.FINALIZED)
-            data = report(repo, args.image, steps, results, captured.identity, run, DEFAULT_POLICY)
-            path = write_report(data, args.output)
-            print(f"Evidence: {path}")
-            return 0 if data["verdict"] == "PASS" else 1 if data["verdict"] == "FAIL" else 3
-        parser.error("Unknown command")
+            data, code = _audit_source(captured, repo, args.image)
+        # No record is published until temporary Git storage and exports close.
+        path = write_report(data, args.output)
+        print(f"Evidence: {path}")
+        return code
     except (
         OSError,
         ParseError,
