@@ -101,3 +101,19 @@ deferred. Next implementation task is the separately scoped URL audit PR.
 PR #8 review follow-up: corrected GH-002 ref advertisement filtering after real
 Git reproduced suffix collisions. The focused/core/package checks passed; details
 are in the latest work review. No URL audit or new phase is enabled by this fix.
+
+## Post-MVP GitHub URL audits — PR 2 (2026-11-03)
+
+The owner authorized the second increment in exactly ten commits. PR #8 is merged;
+this work starts from main `681a09d3ad8659604269c8a928250247e67c749f` and extends
+public URL acquisition to the existing approved local Docker audit. GHA-001..GHA-008
+in `github-sources.md` cover source identity, approval, observed outcomes, cleanup,
+authenticated origin, summaries and local compatibility. Local gate: **327 passed,
+1 live deselected, 0 skips**, including 27 real Docker cases; lint/type/docs/package
+checks pass. The live public GitHub check retained a correct no-op block, not PASS.
+See the latest work review for exact commands and evidence.
+
+Local implementation gate PASSED; remote CI is pending at this checkpoint. The
+new branch is `feat/github-url-audit`. Cloud sandboxes, dependency preparation,
+multi-step setup and direct URL passport/model workflows remain later work.
+Next: review this PR and observe its CI before choosing the next increment.
