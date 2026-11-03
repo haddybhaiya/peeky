@@ -32,7 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     check = commands.add_parser("doctor", help="Check Docker readiness")
     check.add_argument("--json", action="store_true")
     audit = commands.add_parser("audit", help="Run approved smoke steps inside Docker")
-    audit.add_argument("repo", type=Path)
+    audit.add_argument("repo", help="Local Git directory or public GitHub repository URL")
+    audit.add_argument("--ref", help="GitHub branch, tag or full commit SHA (URL inputs only)")
     audit.add_argument(
         "--approve", action="store_true", help="Acknowledge listed commands may execute"
     )
@@ -196,24 +197,23 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
-        if args.command == "inspect":
-            with ExitStack() as stack:
-                remote = None
-                if _remote_input(args.repo):
-                    fetched = stack.enter_context(github_snapshot(args.repo, args.ref))
-                    captured = fetched.source
-                    remote = fetched.remote
-                else:
-                    if args.ref is not None:
-                        raise SourceError("--ref is supported only for GitHub URL inspection")
-                    captured = stack.enter_context(snapshot(safe_root(Path(args.repo))))
-                return _print_inspection(captured, remote, args.json)
-        if _remote_input(str(args.repo)):
-            raise SourceError(
-                "GitHub URLs are supported by inspect only; URL audits are a separate milestone"
-            )
-        repo = safe_root(args.repo)
-        with snapshot(repo) as captured:
+        with ExitStack() as stack:
+            repo: Path | RemoteSource
+            if _remote_input(args.repo):
+                fetched = stack.enter_context(github_snapshot(args.repo, args.ref))
+                captured = fetched.source
+                repo = fetched.remote
+            else:
+                if args.ref is not None:
+                    raise SourceError(
+                        "--ref is supported only for GitHub URL inspection and audits"
+                    )
+                repo = safe_root(Path(args.repo))
+                captured = stack.enter_context(snapshot(repo))
+            if args.command == "inspect":
+                return _print_inspection(
+                    captured, repo if isinstance(repo, RemoteSource) else None, args.json
+                )
             steps = read_steps(captured.path)
             run = RunRecord(captured.identity, tuple(steps))
             run.advance(RunState.INSPECTED)

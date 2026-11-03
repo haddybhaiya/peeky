@@ -107,7 +107,7 @@ def test_T004_rejected_command_never_reaches_docker(
         (["inspect", "https://example.com/o/r"], "repository root"),
         (["inspect", "https://github.com/o/r", "--ref=main~1"], "--ref"),
         (["inspect", "local-path", "--ref=main"], "URL inspection"),
-        (["audit", "https://github.com/o/r", "--approve"], "inspect only"),
+        (["audit", "https://github.com/o/r/tree/main", "--approve"], "repository root"),
     ],
 )
 def test_unsupported_remote_inputs_never_fetch_or_execute(
@@ -125,3 +125,13 @@ def test_unsupported_remote_inputs_never_fetch_or_execute(
     assert main(arguments) == 3
     output = capsys.readouterr()
     assert message in output.err and output.out == ""
+
+
+def test_url_audit_without_approval_never_fetches(monkeypatch: pytest.MonkeyPatch) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Unapproved URL audit touched source, Docker or network")
+
+    monkeypatch.setattr("peeky.github._run_git", forbidden)
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    assert main(["audit", "https://github.com/o/r", "--ref", "main"]) == 2
