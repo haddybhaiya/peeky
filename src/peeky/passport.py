@@ -73,6 +73,10 @@ def make_passport(repo: Path, evidence_file: Path) -> str:
         verify(payload)
     except (ValueError, OSError) as exc:
         raise PassportError("Controller evidence authentication failed") from exc
+    if "remote" in payload:
+        raise PassportError(
+            "GitHub URL audit evidence is supported by report; URL passports are not supported yet"
+        )
     if payload.get("verdict") != "PASS":
         raise PassportError("Passport requires PASS evidence")
     if payload.get("execution") != "offline-docker-single-command":

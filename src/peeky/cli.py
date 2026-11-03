@@ -114,6 +114,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command in {"passport", "diagnose", "recheck", "trial"} and _remote_input(
+            str(args.repo)
+        ):
+            raise SourceError(
+                "GitHub URLs are supported by inspect and audit; this command requires a local repository"
+            )
         if args.command == "report":
             from .reports import export_summary
 
