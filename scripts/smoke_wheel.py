@@ -47,15 +47,25 @@ def main() -> int:
         subprocess.run([python, "-I", "-m", "peeky", "--version"], check=True, cwd=tmp, env=env)
         cli = str(venv_dir / bindir / ("peeky.exe" if os.name == "nt" else "peeky"))
         subprocess.run([cli, "--version"], check=True, cwd=tmp, env=env)
-        inspect_help = subprocess.run(
-            [cli, "inspect", "--help"],
-            check=True,
+        for command in ("inspect", "audit"):
+            help_text = subprocess.run(
+                [cli, command, "--help"],
+                check=True,
+                cwd=tmp,
+                env=env,
+                capture_output=True,
+                text=True,
+            ).stdout
+            assert "--ref" in help_text and "GitHub" in help_text
+        unapproved = subprocess.run(
+            [cli, "audit", "https://github.com/fixture/project", "--ref", "main"],
+            check=False,
             cwd=tmp,
             env=env,
             capture_output=True,
             text=True,
-        ).stdout
-        assert "--ref" in inspect_help and "GitHub" in inspect_help
+        )
+        assert unapproved.returncode == 2 and "not authorized" in unapproved.stderr
         # Import the URL support from the installed artifact, outside the checkout.
         subprocess.run(
             [

@@ -331,3 +331,26 @@ def test_url_audit_does_not_publish_before_source_cleanup_completes(
     assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
     assert all(not path.exists() for path in local_transport)
     assert not output.exists()
+
+
+@pytest.mark.parametrize("ref", ["topic", "refs/heads/topic", "v1", "refs/tags/v1", "HEAD"])
+def test_url_audit_named_selections_and_dot_git_share_canonical_evidence(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    ref: str,
+) -> None:
+    expected = fingerprint(repo)
+    git(repo, "branch", "topic")
+    git(repo, "tag", "-a", "v1", "-m", "annotated audit selection fixture")
+    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    output = tmp_path / "named-selection"
+    assert main(["audit", URL + ".git", "--ref", ref, "--approve", "--output", str(output)]) == 3
+    record = load_record(next(output.glob("*.json")))
+    assert record["repo"] == URL and record["remote"]["url"] == URL
+    assert record["remote"]["requested_ref"] == ref
+    assert record["remote"]["git_commit"] == expected.git_commit
+    assert record["source"]["source_sha256"] == expected.source_sha256
+    assert all(not path.exists() for path in local_transport)
