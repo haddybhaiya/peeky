@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from .domain import DEFAULT_POLICY, RunPolicy
+from .domain import DEFAULT_POLICY, RunPolicy, SourceIdentity
 from .hosttools import host_tool
 from .sources import SourceError, SourceSnapshot, _committed_snapshot
 
@@ -238,6 +238,53 @@ class RemoteSource:
     requested_ref: str | None
     resolved_ref: str | None
     git_commit: str
+
+    def validate(self, source: SourceIdentity) -> None:
+        """Bind durable remote provenance to a captured root revision."""
+        if (
+            type(self.url) is not str
+            or type(self.git_commit) is not str
+            or (self.requested_ref is not None and type(self.requested_ref) is not str)
+            or (self.resolved_ref is not None and type(self.resolved_ref) is not str)
+        ):
+            raise SourceError("Invalid remote source fields")
+        if (
+            parse_url(self.url).url != self.url
+            or not re.fullmatch(r"[a-f0-9]{40}", self.git_commit)
+            or self.git_commit != source.git_commit
+            or source.scope != "."
+            or validate_ref(self.requested_ref) != self.requested_ref
+        ):
+            raise SourceError("Remote source URL, scope or commit does not match captured source")
+        requested = self.requested_ref
+        if requested is not None and re.fullmatch(r"[a-f0-9]{40}", requested):
+            if requested != self.git_commit or self.resolved_ref is not None:
+                raise SourceError("Remote SHA selection does not match captured commit")
+        else:
+            resolved = self.resolved_ref
+            if resolved is None or validate_ref(resolved) != resolved:
+                raise SourceError("Remote named selection requires a resolved ref")
+            if requested in (None, "HEAD"):
+                matches = resolved.startswith("refs/heads/")
+            elif requested is not None and requested.startswith("refs/"):
+                matches = resolved == requested
+            else:
+                matches = resolved in (f"refs/heads/{requested}", f"refs/tags/{requested}")
+            if not matches:
+                raise SourceError("Remote requested and resolved refs do not match")
+
+
+def remote_from_record(value: object, source: SourceIdentity) -> RemoteSource:
+    if not isinstance(value, dict) or set(value) != {
+        "url",
+        "requested_ref",
+        "resolved_ref",
+        "git_commit",
+    }:
+        raise SourceError("Invalid remote source record")
+    remote = RemoteSource(**value)
+    remote.validate(source)
+    return remote
 
 
 def _resolve(

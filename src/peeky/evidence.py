@@ -9,6 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .domain import DEFAULT_POLICY, RunPolicy, RunRecord, RunState, SourceIdentity
+from .github import RemoteSource
 from .models import Step, StepResult
 from .provenance import authenticate
 from .redaction import sanitized
@@ -68,7 +69,7 @@ def runtime_verified(result: StepResult, source: SourceIdentity, image: str) -> 
 
 
 def report(
-    repo: Path,
+    repo: Path | RemoteSource,
     image: str,
     steps: list[Step],
     results: list[StepResult],
@@ -89,9 +90,14 @@ def report(
         or not all(runtime_verified(r, source, image) for r in results)
     ):
         computed = "INCONCLUSIVE"
-    return {
+    if isinstance(repo, RemoteSource):
+        repo.validate(source)
+        repository = repo.url
+    else:
+        repository = str(repo.resolve())
+    data: dict[str, object] = {
         "schema_version": "1.2",
-        "repo": str(repo.resolve()),
+        "repo": repository,
         "readme_sha256": readme_hash,
         "source": asdict(source),
         "policy": asdict(policy),
@@ -118,6 +124,9 @@ def report(
         "results": [r.dict() for r in results],
         "verdict": computed,
     }
+    if isinstance(repo, RemoteSource):
+        data["remote"] = asdict(repo)
+    return data
 
 
 def write_report(data: dict[str, object], output: Path) -> Path:
