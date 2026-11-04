@@ -354,3 +354,63 @@ def test_url_audit_named_selections_and_dot_git_share_canonical_evidence(
     assert record["remote"]["git_commit"] == expected.git_commit
     assert record["source"]["source_sha256"] == expected.source_sha256
     assert all(not path.exists() for path in local_transport)
+
+
+@pytest.mark.parametrize("selector", ["branch", "tag", "default"])
+def test_real_git_redacted_ref_blocked_audit_exports(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    selector: str,
+) -> None:
+    expected = fingerprint(repo)
+    ref = "api_key=demo"
+    if selector == "tag":
+        git(repo, "tag", "-a", ref, "-m", "redaction regression fixture")
+    else:
+        git(repo, "branch", ref)
+        if selector == "default":
+            git(repo, "symbolic-ref", "HEAD", "refs/heads/" + ref)
+    ref_args = [] if selector == "default" else ["--ref", ref]
+    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    output = tmp_path / "redacted-ref-audit"
+    assert main(["audit", URL, *ref_args, "--approve", "--output", str(output)]) == 3
+    artifact = next(output.glob("*.json"))
+    record = load_record(artifact)
+    assert record["source"]["git_commit"] == record["remote"]["git_commit"] == expected.git_commit
+    assert record["remote"]["resolved_ref"].endswith("api_key=[REDACTED]")
+    assert ref not in artifact.read_text()
+    assert local_transport and all(not path.exists() for path in local_transport)
+    summary_dir = tmp_path / "redacted-ref-summary"
+    assert main(["report", "--evidence", str(artifact), "--output", str(summary_dir)]) == 0
+    result = load_record(next((summary_dir / "records").glob("*.json")))["records"][0]
+    assert result["remote_ref_status"] == "redacted-display-only"
+    assert result["outcome"] == "INCONCLUSIVE"
+    assert result["git_commit"] == expected.git_commit
+
+
+def test_real_git_fully_masked_selector_exports_after_secret_is_removed(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ref = "refs/heads/confidential-name"
+    git(repo, "branch", "confidential-name")
+    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    output = tmp_path / "masked-selector"
+    with monkeypatch.context() as configured:
+        configured.setenv("PEEKY_TEST_API_KEY", ref)
+        assert main(["audit", URL, "--ref", ref, "--approve", "--output", str(output)]) == 3
+    artifact = next(output.glob("*.json"))
+    record = load_record(artifact)
+    assert record["remote"]["requested_ref"] == record["remote"]["resolved_ref"] == "[REDACTED]"
+    assert ref not in artifact.read_text()
+    assert (
+        main(["report", "--evidence", str(artifact), "--output", str(tmp_path / "masked-export")])
+        == 0
+    )
+    assert local_transport and all(not path.exists() for path in local_transport)

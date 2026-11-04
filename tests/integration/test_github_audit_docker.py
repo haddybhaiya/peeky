@@ -182,3 +182,40 @@ def test_url_daemon_loss_after_preflight_cannot_run_on_host(
     assert record["results"][0]["reason"] == "DOCKER_UNAVAILABLE"
     assert provenance["target_started"] is False
     assert_container_and_sources_removed(url_docker, record, local_transport)
+
+
+@pytest.mark.parametrize("selector", ["branch", "tag"])
+def test_successful_url_audit_with_secret_like_ref_still_exports(
+    repo: Path,
+    git: Callable[..., bytes],
+    local_transport: list[Path],
+    tmp_path: Path,
+    url_docker: str,
+    selector: str,
+) -> None:
+    (repo / "smoke.py").write_text(
+        "import os\nassert os.getuid() == 65534\nprint('REDACTED_REF_SMOKE_OK')\n"
+    )
+    git(repo, "add", "smoke.py")
+    git(repo, "commit", "-qm", "reviewed ref redaction Docker fixture")
+    expected = fingerprint(repo)
+    ref = "api_key=demo"
+    if selector == "tag":
+        git(repo, "tag", "-a", ref, "-m", "redaction Docker tag")
+    else:
+        git(repo, "branch", ref)
+    output = tmp_path / "successful-redacted-ref"
+    assert main(["audit", URL, "--ref", ref, "--approve", "--output", str(output)]) == 0
+    artifact = next(output.glob("*.json"))
+    record = load_record(artifact)
+    assert record["verdict"] == "PASS"
+    assert record["remote"]["git_commit"] == expected.git_commit
+    assert record["remote"]["requested_ref"] == "api_key=[REDACTED]"
+    assert ref not in artifact.read_text()
+    assert "REDACTED_REF_SMOKE_OK" in record["results"][0]["stdout"]
+    assert_container_and_sources_removed(url_docker, record, local_transport)
+    summary_dir = tmp_path / "successful-redacted-summary"
+    assert main(["report", "--evidence", str(artifact), "--output", str(summary_dir)]) == 0
+    result = load_record(next((summary_dir / "records").glob("*.json")))["records"][0]
+    assert result["outcome"] == "PASS" and result["git_commit"] == expected.git_commit
+    assert result["remote_ref_status"] == "redacted-display-only"
