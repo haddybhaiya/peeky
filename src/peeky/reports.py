@@ -38,6 +38,8 @@ def summarize_record(record: dict[str, Any]) -> dict[str, Any]:
             if record.get("repo") != remote.url:
                 raise ValueError("Audit repository does not match remote provenance")
             result["remote"] = asdict(remote)
+            if remote.refs_redacted:
+                result["remote_ref_status"] = "redacted-display-only"
         steps = [Step(**s) for s in record["steps"]]
         results = [StepResult(**r) for r in record["results"]]
         outcome = record["verdict"]
@@ -104,6 +106,10 @@ def render_markdown(summary: dict[str, Any]) -> str:
             lines.append(
                 f"- Resolved ref: {html.escape(str(remote['resolved_ref'] or '(pinned commit)'))}"
             )
+            if record.get("remote_ref_status") == "redacted-display-only":
+                lines.append(
+                    "- Ref labels are redacted; use git_commit to identify the audited revision."
+                )
         if "comparison" in record:
             comparison = record["comparison"]
             lines.append(
