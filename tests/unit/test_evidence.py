@@ -100,3 +100,56 @@ def test_remote_origin_rejects_inconsistent_fields(repo: Path, changes: dict[str
             ),
             replace(source, scope="subdir"),
         )
+
+
+@pytest.mark.parametrize(
+    ("requested", "resolved"),
+    [
+        ("api_key=[REDACTED]", "refs/heads/api_key=[REDACTED]"),
+        (None, "refs/heads/api_key=[REDACTED]"),
+        ("HEAD", "refs/heads/[REDACTED]"),
+        ("[REDACTED]", "[REDACTED]"),
+        ("api_key=[REDACTED]", "refs/tags/api_key=[REDACTED]"),
+    ],
+)
+def test_stored_redacted_labels_preserve_commit_binding(
+    repo: Path, requested: str | None, resolved: str
+) -> None:
+    source = fingerprint(repo)
+    remote = RemoteSource(
+        "https://github.com/fixture/project", requested, resolved, source.git_commit
+    )
+    assert remote_from_record(asdict(remote), source) == remote
+    with pytest.raises(ValueError):
+        remote.validate(source)  # The same label must never become a live Git input.
+    with pytest.raises(ValueError):
+        remote_from_record(asdict(remote), replace(source, git_commit="0" * 40))
+    with pytest.raises(ValueError):
+        remote_from_record(asdict(remote), replace(source, scope="subdir"))
+    with pytest.raises(ValueError):
+        remote_from_record(asdict(replace(remote, url="https://other.example/o/r")), source)
+
+
+@pytest.mark.parametrize(
+    ("requested", "resolved"),
+    [
+        ("api_key=[REDACTED]", None),
+        (123, "refs/heads/api_key=[REDACTED]"),
+        ("api_key=[REDACTED]", "not-a-qualified-ref"),
+        ("bad~ref", "refs/heads/api_key=[REDACTED]"),
+        ("api_key=[REDACTED]\n", "refs/heads/api_key=[REDACTED]"),
+        ("bad[unmarked]", "refs/heads/bad[unmarked]"),
+    ],
+)
+def test_stored_labels_do_not_allow_unrelated_invalid_metadata(
+    repo: Path, requested: object, resolved: object
+) -> None:
+    source = fingerprint(repo)
+    value = {
+        "url": "https://github.com/fixture/project",
+        "requested_ref": requested,
+        "resolved_ref": resolved,
+        "git_commit": source.git_commit,
+    }
+    with pytest.raises(ValueError):
+        remote_from_record(value, source)
