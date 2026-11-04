@@ -107,3 +107,41 @@ qualified-name suffixes. Filter unrelated advertised names before validating the
 selected records. Keep malformed/duplicate selected values, missing refs and
 branch/tag ambiguity as errors. Real Git regressions exercise both default HEAD
 and named refs with different-commit suffix collisions.
+
+## ADR-017: Full URL audits reuse local Docker and preserve durable source origin
+
+The owner authorized the second PR in ten commits. Share URL/local acquisition
+between inspect and audit; check audit approval before any fetching. Run the same
+single approved command from the same verified export through the existing local
+Docker runner. Target network, image, resource, environment and cleanup controls
+remain unchanged. Use inspect's full SHA when an audit must reproduce an earlier
+preview; named refs are resolved once per invocation.
+
+Keep audit schema 1.2 and local record shape. URL records use canonical HTTPS
+`repo` plus additive HMAC-bound `remote` origin, validated against root scope,
+captured commit and requested/resolved ref selection. A temporary clone directory
+is not the repository identity. Close source/Git contexts before the atomic
+evidence writer publishes anything. Fetch/capture failure cannot invent source
+evidence; interruption or failed source cleanup does not finalize a record.
+
+Summary exports validate and preserve URL provenance without refetch/execution.
+Existing local passports retain their path-binding contract and explicitly reject
+URL evidence; direct URL passport/diagnose/recheck/trial inputs fail before model
+configuration or disclosure. No cloud provider, dependency installation, multiple
+setup stages, GitHub credentials or public attestation is added.
+
+Deterministic URL integration uses real Git through a labeled local transport;
+target outcomes use genuine offline Docker. Timeout and daemon-loss cases use
+the real runner; the cleanup case removes its owned container and explicitly
+simulates a lost acknowledgement. Independent daemon/source absence checks and
+authenticated report round trips verify the final lifecycle.
+
+**ADR-017 ref-redaction review correction (2026-11-04):** secret redaction applies
+to all stored strings, including branch/tag names. Keep that redaction intact.
+Distinguish strict live origin validation from reading authenticated stored labels.
+When a ref contains the exact redaction mask, validate canonical URL, root scope
+and captured commit without reconstructing a hidden name. Unmasked fields still
+require valid ref syntax, and unmasked records keep full selection consistency.
+Reports disclose masked labels as display-only and use the recorded commit for
+exact identity. This supports affected existing records without migration or raw
+secret retention. Reports never use masked labels to fetch or execute anything.

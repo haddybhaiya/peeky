@@ -44,6 +44,15 @@
 
 ## Fixed fixtures
 
+Post-MVP URL audits use the shared `local_transport` Git fixture for deterministic
+acquisition. It substitutes only the network transport, not Git objects or target
+outcomes. The Docker URL suite executes reviewed synthetic scripts in actual
+restricted containers, independently checks removal, and reads authenticated
+records/reports after source deletion. Source-error/cancellation tests explicitly
+mock capability failures without claiming target execution. GHA-001..GHA-008 and
+the live public GitHub no-op check are documented in `github-sources.md` and the
+work-review ledger.
+
 - `good_repo` declares one `python smoke.py` command that prints `HELLO_FROM_GOOD_FIXTURE`; target execution requires the separate real Docker gate.
 - `bad_repo` has deliberately wrong module, must FAIL.
 - `no_optin_repo` must produce no steps, INCONCLUSIVE; never auto-infer commands.

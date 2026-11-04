@@ -18,8 +18,21 @@ Peeky fetches an exact commit into temporary Git storage, verifies source object
 and previews opted-in README commands without checkout or target execution. JSON
 includes the canonical URL, requested ref and resolved commit. No Docker or API key
 is required for inspection. Exit 2 means no opted-in commands were found.
-URL audits are the next increment; execution commands currently use local sources.
 See [supported URLs, ref rules and limits](docs/github-sources.md).
+
+Run the approved smoke command in local Docker without a manual clone:
+
+```bash
+peeky audit https://github.com/OWNER/REPO --ref FULL_COMMIT_SHA --approve
+peeky report --evidence .peeky/runs/RUN_ID.json --output .peeky/review
+```
+
+Prepare Docker and the reviewed image using the quick-start instructions below.
+Use the commit printed by `inspect` to audit the exact revision you reviewed.
+URL audits require one annotated smoke command, use the same offline Docker
+restrictions as local audits, and save authenticated URL/commit provenance after
+temporary sources are cleaned up. They do not install dependencies or create a
+cloud sandbox. URL passports and model-repair commands remain unsupported.
 
 ## BYOK Gemma README repair
 
@@ -36,7 +49,7 @@ Review the returned README-only diff and exact approval digest. Only then run `p
 
 ## Quick start
 
-Requires Python 3.12+, Git, and Docker for real target execution. Model credentials **not** required for scaffold smoke checks. Sources must be committed local Git directories: modified, staged or untracked non-ignored files in the selected directory block capture. A committed subdirectory (including the fixtures below) can be selected without requiring unrelated directories to be clean.
+Requires Python 3.12+, Git, and Docker for real target execution. Model credentials **not** required for deterministic checks. Inspect and audit accept public GitHub root URLs. Local sources must be committed Git directories: modified, staged or untracked non-ignored files in the selected directory block capture. A committed subdirectory (including the fixtures below) can be selected without requiring unrelated directories to be clean.
 
 ```bash
 python -m pip install -e .
@@ -83,7 +96,7 @@ The [repository analysis](docs/repository-analysis.md) records the current imple
 
 - `peeky inspect PATH_OR_GITHUB_URL [--ref REF] [--json]`: capture committed source and extract **opted-in** fenced `bash peeky` commands as a proposal; never run them. `--ref` selects a GitHub branch/tag/full SHA and is URL-only. JSON contains `source`, `policy_sha256`, `run` and `steps`, plus `remote` for URL inputs.
 - `peeky doctor [--json]`: check whether Docker CLI/daemon is available; never install Docker.
-- `peeky audit PATH --approve [--image IMAGE] [--output DIR]`: execute exactly one permitted smoke command in Docker. Default image is the reviewed immutable digest in `src/peeky/images.py`; mutable tags and unreviewed digests are blocked. Returns 0 for PASS, 1 for observed target FAIL, 2 for a pre-execution policy/no-op block, and 3 for unavailable/ambiguous infrastructure.
+- `peeky audit PATH_OR_GITHUB_URL --approve [--ref REF] [--image IMAGE] [--output DIR]`: execute exactly one permitted smoke command in local Docker. `--ref` is URL-only; omission resolves the default branch once. Approval is checked before fetching. Default image is the reviewed immutable digest in `src/peeky/images.py`; mutable tags and unreviewed digests are blocked. Returns 0 for PASS, 1 for observed target FAIL, 2 for a pre-execution policy/no-op block, and 3 for unavailable/ambiguous infrastructure. Fetch failures return 3 without inventing source evidence.
 - `peeky passport PATH --evidence FILE [--output FILE]`: generate **unmerged** candidate `AGENTS.generated.md` only from controller-authenticated schema 1.2 evidence bound to the current clean commit, source, policy and finalized plan. Legacy schemas are rejected; rerun the audit. Local HMAC integrity is not a public signature or independent third-party execution attestation.
 
 See [source capture and identity](docs/source-capture.md) for path rules, limits, CRLF handling and unsupported Git worktrees/filters. Git metadata is read on the host through trusted Git plumbing; target scripts, imports and hooks are never run there.

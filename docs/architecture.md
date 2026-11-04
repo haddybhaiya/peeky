@@ -34,7 +34,7 @@ Repository snapshot + README parser ----> Reviewable step plan
 
 - `parser.py`: extract only designated Markdown fences. Source text is untrusted data.
 - `sources.py`: bounded verified Git object reads, clean scoped source identity and temporary read-only exports; no target checkout/hooks/filters/imports.
-- `github.py`: owner-authorized post-MVP public URL inspection, strict HTTPS repository inputs, one-time ref resolution, bounded monitored Git fetching and metadata-only capture through the shared source validator. Both temporary storage contexts are owned by the controller; URL audit execution is deferred. See `github-sources.md`.
+- `github.py`: public URL inspection/audit acquisition, strict HTTPS repository inputs, one-time ref resolution, bounded monitored Git fetching and metadata-only capture through the shared source validator. Validated durable origin binds URL/ref/root commit; the existing local Docker runner executes only approved captured commands. Both temporary storage contexts close before audit evidence is published. See `github-sources.md`.
 - `domain.py`: frozen source/policy identities, canonical plan hashes and controller-owned run transitions.
 - `policy.py`: trusted allowlist and no shell metacharacters, independent of model.
 - `runner.py`: snapshot-only, digest-allowlisted Docker create/attach/inspect/owned-cleanup controller; target code runs only in restricted containers with bounded/redacted streams.

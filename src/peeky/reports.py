@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 from .benchmark import summarize
 from .domain import DEFAULT_POLICY, SourceFile, SourceIdentity, canonical_hash
 from .evidence import runtime_verified, write_report
+from .github import remote_from_record
 from .models import Step, StepResult
 from .redaction import sanitized
 from .repair import load_record
@@ -31,6 +33,13 @@ def summarize_record(record: dict[str, Any]) -> dict[str, Any]:
         source_data = dict(record["source"])
         source_data["files"] = tuple(SourceFile(**f) for f in source_data["files"])
         source = SourceIdentity(**source_data)
+        if "remote" in record:
+            remote = remote_from_record(record["remote"], source)
+            if record.get("repo") != remote.url:
+                raise ValueError("Audit repository does not match remote provenance")
+            result["remote"] = asdict(remote)
+            if remote.refs_redacted:
+                result["remote_ref_status"] = "redacted-display-only"
         steps = [Step(**s) for s in record["steps"]]
         results = [StepResult(**r) for r in record["results"]]
         outcome = record["verdict"]
@@ -88,6 +97,19 @@ def render_markdown(summary: dict[str, Any]) -> str:
         for key in ("source_schema", "record_sha256", "outcome", "git_commit", "source_sha256"):
             if key in record:
                 lines.append(f"- {key}: {html.escape(str(record[key]))}")
+        if "remote" in record:
+            remote = record["remote"]
+            lines.append(f"- Repository: {html.escape(remote['url'])}")
+            lines.append(
+                f"- Requested ref: {html.escape(str(remote['requested_ref'] or '(default)'))}"
+            )
+            lines.append(
+                f"- Resolved ref: {html.escape(str(remote['resolved_ref'] or '(pinned commit)'))}"
+            )
+            if record.get("remote_ref_status") == "redacted-display-only":
+                lines.append(
+                    "- Ref labels are redacted; use git_commit to identify the audited revision."
+                )
         if "comparison" in record:
             comparison = record["comparison"]
             lines.append(

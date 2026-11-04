@@ -32,7 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     check = commands.add_parser("doctor", help="Check Docker readiness")
     check.add_argument("--json", action="store_true")
     audit = commands.add_parser("audit", help="Run approved smoke steps inside Docker")
-    audit.add_argument("repo", type=Path)
+    audit.add_argument("repo", help="Local Git directory or public GitHub repository URL")
+    audit.add_argument("--ref", help="GitHub branch, tag or full commit SHA (URL inputs only)")
     audit.add_argument(
         "--approve", action="store_true", help="Acknowledge listed commands may execute"
     )
@@ -109,10 +110,65 @@ def _print_inspection(captured: SourceSnapshot, remote: RemoteSource | None, as_
     return 0 if steps else 2
 
 
+def _audit_source(
+    captured: SourceSnapshot, repo: Path | RemoteSource, image: str
+) -> tuple[dict[str, object], int]:
+    """Observe the audit; finalize its record only after source contexts close."""
+    steps = read_steps(captured.path)
+    run = RunRecord(captured.identity, tuple(steps))
+    run.advance(RunState.INSPECTED)
+    reason = ""
+    try:
+        validate_run_image(image)
+        for step in steps:
+            safe_argv(step.command)
+        if not steps:
+            reason = "NO_OPTED_IN_COMMANDS"
+        elif len(steps) != DEFAULT_POLICY.max_audit_steps:
+            reason = "MULTI_STEP_UNSUPPORTED"
+    except PolicyError as exc:
+        reason = str(exc)
+    if reason:
+        run.advance(RunState.BLOCKED)
+        data = report(repo, image, steps, [], captured.identity, run, DEFAULT_POLICY)
+        data["reason"] = reason
+        print(f"No execution: {reason}", file=sys.stderr)
+        return data, 2
+    run.advance(RunState.APPROVED)
+    readiness = doctor(avoid=captured._origin)
+    if not readiness["docker_daemon"] or not readiness.get("linux"):
+        run.advance(RunState.BLOCKED)
+        data = report(repo, image, steps, [], captured.identity, run, DEFAULT_POLICY)
+        data["reason"] = "Docker daemon unavailable; no target execution"
+        print("Docker daemon unavailable; refusing host execution.", file=sys.stderr)
+        return data, 3
+    run.advance(RunState.SANDBOX_RUN)
+    results = []
+    for step in steps:
+        captured.verify()
+        result = execute(step, captured, image, timeout=DEFAULT_POLICY.command_timeout_seconds)
+        results.append(result)
+        print(f"{step.id}: {result.outcome}")
+        if result.outcome != "PASS":
+            break
+    captured.verify()
+    run.advance(RunState.OBSERVED)
+    run.advance(RunState.FINALIZED)
+    data = report(repo, image, steps, results, captured.identity, run, DEFAULT_POLICY)
+    code = 0 if data["verdict"] == "PASS" else 1 if data["verdict"] == "FAIL" else 3
+    return data, code
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command in {"passport", "diagnose", "recheck", "trial"} and _remote_input(
+            str(args.repo)
+        ):
+            raise SourceError(
+                "GitHub URLs are supported by inspect and audit; this command requires a local repository"
+            )
         if args.command == "report":
             from .reports import export_summary
 
@@ -196,73 +252,28 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
-        if args.command == "inspect":
-            with ExitStack() as stack:
-                remote = None
-                if _remote_input(args.repo):
-                    fetched = stack.enter_context(github_snapshot(args.repo, args.ref))
-                    captured = fetched.source
-                    remote = fetched.remote
-                else:
-                    if args.ref is not None:
-                        raise SourceError("--ref is supported only for GitHub URL inspection")
-                    captured = stack.enter_context(snapshot(safe_root(Path(args.repo))))
-                return _print_inspection(captured, remote, args.json)
-        if _remote_input(str(args.repo)):
-            raise SourceError(
-                "GitHub URLs are supported by inspect only; URL audits are a separate milestone"
-            )
-        repo = safe_root(args.repo)
-        with snapshot(repo) as captured:
-            steps = read_steps(captured.path)
-            run = RunRecord(captured.identity, tuple(steps))
-            run.advance(RunState.INSPECTED)
-            reason = ""
-            try:
-                validate_run_image(args.image)
-                for step in steps:
-                    safe_argv(step.command)
-                if not steps:
-                    reason = "NO_OPTED_IN_COMMANDS"
-                elif len(steps) != DEFAULT_POLICY.max_audit_steps:
-                    reason = "MULTI_STEP_UNSUPPORTED"
-            except PolicyError as exc:
-                reason = str(exc)
-            if reason:
-                run.advance(RunState.BLOCKED)
-                data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
-                data["reason"] = reason
-                print(f"Evidence: {write_report(data, args.output)}")
-                print(f"No execution: {reason}", file=sys.stderr)
-                return 2
-            run.advance(RunState.APPROVED)
-            readiness = doctor(avoid=captured._origin)
-            if not readiness["docker_daemon"] or not readiness.get("linux"):
-                run.advance(RunState.BLOCKED)
-                data = report(repo, args.image, steps, [], captured.identity, run, DEFAULT_POLICY)
-                data["reason"] = "Docker daemon unavailable; no target execution"
-                print(f"Evidence: {write_report(data, args.output)}")
-                print("Docker daemon unavailable; refusing host execution.", file=sys.stderr)
-                return 3
-            run.advance(RunState.SANDBOX_RUN)
-            results = []
-            for step in steps:
-                captured.verify()
-                result = execute(
-                    step, captured, args.image, timeout=DEFAULT_POLICY.command_timeout_seconds
+        with ExitStack() as stack:
+            repo: Path | RemoteSource
+            if _remote_input(args.repo):
+                fetched = stack.enter_context(github_snapshot(args.repo, args.ref))
+                captured = fetched.source
+                repo = fetched.remote
+            else:
+                if args.ref is not None:
+                    raise SourceError(
+                        "--ref is supported only for GitHub URL inspection and audits"
+                    )
+                repo = safe_root(Path(args.repo))
+                captured = stack.enter_context(snapshot(repo))
+            if args.command == "inspect":
+                return _print_inspection(
+                    captured, repo if isinstance(repo, RemoteSource) else None, args.json
                 )
-                results.append(result)
-                print(f"{step.id}: {result.outcome}")
-                if result.outcome != "PASS":
-                    break
-            captured.verify()
-            run.advance(RunState.OBSERVED)
-            run.advance(RunState.FINALIZED)
-            data = report(repo, args.image, steps, results, captured.identity, run, DEFAULT_POLICY)
-            path = write_report(data, args.output)
-            print(f"Evidence: {path}")
-            return 0 if data["verdict"] == "PASS" else 1 if data["verdict"] == "FAIL" else 3
-        parser.error("Unknown command")
+            data, code = _audit_source(captured, repo, args.image)
+        # No record is published until temporary Git storage and exports close.
+        path = write_report(data, args.output)
+        print(f"Evidence: {path}")
+        return code
     except (
         OSError,
         ParseError,

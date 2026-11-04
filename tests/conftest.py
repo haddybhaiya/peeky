@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from peeky import github
 from peeky.domain import DEFAULT_POLICY, RunRecord, RunState
 from peeky.evidence import report, write_report
 from peeky.images import DEFAULT_IMAGE
@@ -126,3 +127,23 @@ def evidence_file(repo: Path, tmp_path: Path) -> Path:
         report(repo, DEFAULT_IMAGE, steps, results, source, run, DEFAULT_POLICY),
         tmp_path / "evidence",
     )
+
+
+@pytest.fixture
+def local_transport(repo: Path, monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    original = github._git_command
+    roots: list[Path] = []
+
+    def command(root: Path, *args: str) -> list[str]:
+        roots.append(root)
+        trusted = original(root, *args)
+        prefix = trusted[: -len(args)]
+        # The test alone substitutes a local repository for the approved HTTPS URL.
+        # The production URL validator and transport never allow file protocols.
+        translated = [
+            str(repo) if value == "https://github.com/fixture/project" else value for value in args
+        ]
+        return [*prefix, "-c", "protocol.file.allow=always", *translated]
+
+    monkeypatch.setattr(github, "_git_command", command)
+    return roots

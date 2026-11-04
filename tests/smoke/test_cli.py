@@ -107,7 +107,7 @@ def test_T004_rejected_command_never_reaches_docker(
         (["inspect", "https://example.com/o/r"], "repository root"),
         (["inspect", "https://github.com/o/r", "--ref=main~1"], "--ref"),
         (["inspect", "local-path", "--ref=main"], "URL inspection"),
-        (["audit", "https://github.com/o/r", "--approve"], "inspect only"),
+        (["audit", "https://github.com/o/r/tree/main", "--approve"], "repository root"),
     ],
 )
 def test_unsupported_remote_inputs_never_fetch_or_execute(
@@ -125,3 +125,90 @@ def test_unsupported_remote_inputs_never_fetch_or_execute(
     assert main(arguments) == 3
     output = capsys.readouterr()
     assert message in output.err and output.out == ""
+
+
+def test_url_audit_without_approval_never_fetches(monkeypatch: pytest.MonkeyPatch) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Unapproved URL audit touched source, Docker or network")
+
+    monkeypatch.setattr("peeky.github._run_git", forbidden)
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    assert main(["audit", "https://github.com/o/r", "--ref", "main"]) == 2
+
+
+def test_url_audit_fetch_failure_does_not_invent_source_or_execute(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from peeky.sources import SourceError
+
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise SourceError("GitHub source unavailable")
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Failed fetch reached Docker or local fallback")
+
+    monkeypatch.setattr("peeky.github._run_git", unavailable)
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    output = tmp_path / "no-captured-source"
+    assert main(["audit", "https://github.com/o/r", "--approve", "--output", str(output)]) == 3
+    assert "source unavailable" in capsys.readouterr().err
+    assert not output.exists()
+
+
+def test_local_audit_rejects_remote_ref_before_capture(monkeypatch: pytest.MonkeyPatch) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Local --ref triggered capture")
+
+    monkeypatch.setattr("peeky.cli.snapshot", forbidden)
+    assert main(["audit", "local-repo", "--ref", "main", "--approve"]) == 3
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["passport", "https://github.com/o/r", "--evidence", "not-read.json"],
+        [
+            "diagnose",
+            "https://github.com/o/r",
+            "--evidence",
+            "not-read.json",
+            "--expected-command",
+            "python smoke.py",
+            "--expected-stdout",
+            "OK",
+            "--model-consent",
+        ],
+        [
+            "recheck",
+            "https://github.com/o/r",
+            "--proposal",
+            "not-read.json",
+            "--approve-proposal",
+            "not-read",
+        ],
+        [
+            "trial",
+            "https://github.com/o/r",
+            "--evidence",
+            "not-read.json",
+            "--expected-command",
+            "python smoke.py",
+            "--expected-stdout",
+            "OK",
+            "--approve",
+            "--model-consent",
+        ],
+    ],
+)
+def test_local_only_commands_reject_url_before_model_or_fetch(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], arguments: list[str]
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        pytest.fail("Unsupported URL command reached model configuration or fetching")
+
+    monkeypatch.setattr("peeky.providers.openai_compatible.load_config", forbidden)
+    monkeypatch.setattr("peeky.github._run_git", forbidden)
+    assert main(arguments) == 3
+    assert "requires a local repository" in capsys.readouterr().err

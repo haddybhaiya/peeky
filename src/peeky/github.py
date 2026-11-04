@@ -10,11 +10,12 @@ import tempfile
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
-from .domain import DEFAULT_POLICY, RunPolicy
+from .domain import DEFAULT_POLICY, RunPolicy, SourceIdentity
 from .hosttools import host_tool
+from .redaction import MASK
 from .sources import SourceError, SourceSnapshot, _committed_snapshot
 
 
@@ -238,6 +239,93 @@ class RemoteSource:
     requested_ref: str | None
     resolved_ref: str | None
     git_commit: str
+
+    @property
+    def refs_redacted(self) -> bool:
+        return any(
+            isinstance(value, str) and MASK in value
+            for value in (self.requested_ref, self.resolved_ref)
+        )
+
+    def validate(self, source: SourceIdentity) -> None:
+        """Bind durable remote provenance to a captured root revision."""
+        if (
+            type(self.url) is not str
+            or type(self.git_commit) is not str
+            or (self.requested_ref is not None and type(self.requested_ref) is not str)
+            or (self.resolved_ref is not None and type(self.resolved_ref) is not str)
+        ):
+            raise SourceError("Invalid remote source fields")
+        if (
+            parse_url(self.url).url != self.url
+            or not re.fullmatch(r"[a-f0-9]{40}", self.git_commit)
+            or self.git_commit != source.git_commit
+            or source.scope != "."
+            or validate_ref(self.requested_ref) != self.requested_ref
+        ):
+            raise SourceError("Remote source URL, scope or commit does not match captured source")
+        requested = self.requested_ref
+        if requested is not None and re.fullmatch(r"[a-f0-9]{40}", requested):
+            if requested != self.git_commit or self.resolved_ref is not None:
+                raise SourceError("Remote SHA selection does not match captured commit")
+        else:
+            resolved = self.resolved_ref
+            if resolved is None or validate_ref(resolved) != resolved:
+                raise SourceError("Remote named selection requires a resolved ref")
+            if requested in (None, "HEAD"):
+                matches = resolved.startswith("refs/heads/")
+            elif requested is not None and requested.startswith("refs/"):
+                matches = resolved == requested
+            else:
+                matches = resolved in (f"refs/heads/{requested}", f"refs/tags/{requested}")
+            if not matches:
+                raise SourceError("Remote requested and resolved refs do not match")
+
+    def validate_stored(self, source: SourceIdentity) -> None:
+        """Stored masked refs are display labels, never inputs to Git resolution.
+
+        Live origin validation happens before storage redaction. Authentication
+        protects those recorded observations, but hidden ref details cannot be
+        reconstructed. The canonical URL, root scope and exact commit still
+        undergo the same identity checks when a report reads a masked record.
+        """
+        if not self.refs_redacted:
+            self.validate(source)
+            return
+        for value in (self.requested_ref, self.resolved_ref):
+            if value is not None:
+                if (
+                    type(value) is not str
+                    or len(value) > 1024
+                    or any(ord(c) <= 32 or ord(c) == 127 for c in value)
+                ):
+                    raise SourceError("Invalid stored remote ref label")
+                if MASK not in value:
+                    validate_ref(value)
+        if self.resolved_ref is None:
+            raise SourceError("Redacted named selection requires a recorded resolved ref")
+        if self.requested_ref is not None and re.fullmatch(r"[a-fA-F0-9]{40}", self.requested_ref):
+            raise SourceError("Pinned SHA selection cannot contain redacted named refs")
+        if MASK not in self.resolved_ref and not self.resolved_ref.startswith(
+            ("refs/heads/", "refs/tags/")
+        ):
+            raise SourceError("Stored resolved ref must name a branch or tag")
+        # Validate identity using the exact captured commit, not a fabricated
+        # reconstruction of a name whose secret-bearing characters were removed.
+        replace(self, requested_ref=self.git_commit, resolved_ref=None).validate(source)
+
+
+def remote_from_record(value: object, source: SourceIdentity) -> RemoteSource:
+    if not isinstance(value, dict) or set(value) != {
+        "url",
+        "requested_ref",
+        "resolved_ref",
+        "git_commit",
+    }:
+        raise SourceError("Invalid remote source record")
+    remote = RemoteSource(**value)
+    remote.validate_stored(source)
+    return remote
 
 
 def _resolve(

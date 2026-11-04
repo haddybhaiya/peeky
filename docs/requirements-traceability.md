@@ -108,3 +108,17 @@ annotated/Unicode refs, moving branches, denial paths, identity and cleanup.
 rejects unsupported inputs before network/execution. The installed-wheel smoke
 imports the packaged resolver and checks `inspect --help` outside the checkout.
 Existing Docker/evidence/passport gates remain required regressions.
+
+## Post-MVP GitHub audit mapping
+
+GHA-001..GHA-008 are mapped in
+[URL audit acceptance checks](github-sources.md#url-audit-acceptance-checks).
+CLI smoke covers approval-before-fetch, source failure, local-only ref rejection
+and unsupported URL command guards. `test_github_source.py` covers real Git policy
+blocks, missing Docker, supported selectors, context cancellation and finalization
+after source cleanup. `test_github_audit_docker.py` verifies actual default/pinned
+PASS/FAIL, timeout, daemon loss, simulated uncertain cleanup acknowledgement,
+owned-container/source absence and durable authenticated report export. Evidence
+and summary units reject origin tampering, mismatches and unsupported passports.
+Installed-wheel smoke checks URL/ref help and denial before approval. Existing
+core/sandbox CI selectors automatically include the new source and Docker tests.

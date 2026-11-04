@@ -30,6 +30,11 @@ for public GitHub URL resolution and read-only inspection. GH-001..GH-008 in
 `github-sources.md` define that increment. The historical hackathon scope above
 remains intact; URL audit execution and cloud providers are later work.
 
+**Post-MVP amendment (2026-11-03):** the owner authorized PR 2 in ten commits,
+extending the same local Docker audit to public GitHub root URLs. GHA-001..GHA-008
+define approval-before-fetch, source/provenance, verdict and cleanup gates. This
+does not add cloud execution, dependency installation or remote model workflows.
+
 `PASS` means the exact listed offline commands passed under recorded run conditions. `FAIL` means at least one permitted check returned a nonzero error with sufficient observation. `INCONCLUSIVE` means missing setup steps, environment failure, timeout, skipped check, model uncertainty or unsuitable oracle. `BLOCKED` is a policy gate before execution. No "repository reproducible" universal claim from one smoke command.
 
 ## Submission gate

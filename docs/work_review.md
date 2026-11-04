@@ -410,3 +410,139 @@ unchanged. **Gate / next task:** local review-fix gate PASSED; push one commit
 authored by `haddybhaiya <harshsharma2k614@gmail.com>` with
 `Co-authored-by: Codex <codex@openai.com>`, then observe fresh PR CI. Remote CI
 success for this new commit is not inferred from earlier green runs.
+
+## 2026-11-03 — Full GitHub URL audit PR (ten commits)
+
+**Authorization/base:** the owner requested the second PR and specified exactly
+ten commits. PR #8 was observed merged. Base main is
+`681a09d3ad8659604269c8a928250247e67c749f`; branch `feat/github-url-audit`. All ten
+commits are authored by `haddybhaiya <harshsharma2k614@gmail.com>` and carry
+`Co-authored-by: Codex <codex@openai.com>`. This is separately authorized post-MVP
+work under GHA-001..GHA-008, not a new hackathon phase.
+
+**Changed:** `audit` accepts the same public URL/ref selectors as inspect and
+checks approval before fetching. Shared acquisition supplies an immutable export
+to the existing single-command offline Docker pipeline. Audit evidence preserves
+schema 1.2, using canonical URL plus validated HMAC-bound requested/resolved ref,
+root scope and commit instead of temporary repository identity. Source contexts
+close before final records are atomically published. Summaries validate/preserve
+remote origin; local record shape and execution policy remain compatible. Direct
+URL model/passport commands and URL passport evidence fail clearly. No new
+dependencies, provider calls, cloud sandbox or target dependency installation.
+
+**Environment/prerequisite:** Linux/Python 3.12.14 with existing locked pytest
+9.1.1, Ruff 0.16.10 and mypy 2.4.0. Managed local Linux Docker was explicitly checked
+and the previously reviewed Python image was already cached at the approved
+digest `sha256:12316debbfb86890f6b2d825820612741ba527ad5a44e3902759141d572bfe8f`.
+The unchanged baseline core/Git gate passed 269 cases, 20 Docker deselected.
+
+| Completed check | Actual result |
+|---|---|
+| URL source/CLI focused gate after final selectors | 51 passed |
+| New actual Docker URL suite | 7 passed in 15.71s |
+| Final `pytest -m 'not live' -q` | **327 passed, 1 live deselected, 0 skips in 66.41s**, including all 27 Docker cases; `.peeky/url-audit-validation/gate.log` |
+| Ruff lint/format | Passed; 52 Python files formatted |
+| `mypy src tests` | Passed; 47 source/test files |
+| `python scripts/check_docs.py` | Passed; 20 required public contracts |
+| `uv build --wheel --offline`, isolated `scripts/smoke_wheel.py` | Passed; installed inspect/audit URL/ref help, no-fetch approval denial and local inspect outside checkout |
+| Wheel/source and manifest validation | 21 packaged source modules plus README match; 92 public tracked-file hashes refreshed/verified |
+| Whitespace and commit metadata checks | `git diff --check`; exactly ten commits, requested author and co-author trailers verified before push |
+
+Tests use real Git objects, refs and fetches with an explicitly substituted local
+transport. Docker outcomes are genuine, including UID/source/secret-environment
+checks, default/pinned PASS/FAIL and actual timeout. Daemon-loss testing changes
+the real runner endpoint after a simulated successful preflight; cleanup testing
+actually removes the owned container then simulates a lost acknowledgement.
+Independent Docker absence probes and source/export-path checks confirm removal;
+records and summaries authenticate after deletion. Policy blocks, missing Docker,
+fetch errors, cancellation and uncertain source cleanup are not target PASS.
+
+**Actual public GitHub check:** ran an approved URL audit against this repository
+pinned to base main `681a09d3ad8659604269c8a928250247e67c749f`. Its root README has no
+opted-in command, so it correctly returned exit 2, BLOCKED/INCONCLUSIVE with reason
+NO_OPTED_IN_COMMANDS and zero execution results. Authenticated record:
+`.peeky/url-audit-validation/live-github/b81a1315a5644414b4f5cd83e08d35e2.json`.
+The report command exported authenticated SUMMARY_ONLY JSON/Markdown under
+`.peeky/url-audit-validation/live-summary/`, preserving URL/commit provenance.
+Private controller state is outside the checkout. No live public target PASS or
+new model request is claimed.
+
+**Docs updated:** URL audit workflow/GHA mapping, README, architecture, source and
+evidence contracts, runner boundary, post-MVP scope, phase tracker, assumptions
+A-28/A-29, ADR-017, requirements/test plan and public manifest. Existing main
+README edits are preserved.
+
+**Known limits:** public root URLs and one annotated offline command only; no
+private GitHub credentials, redirects/subdirectory URLs, dependency setup,
+multi-step bootstrap, cloud provider or direct URL passport/model workflows.
+Fetch thresholds are monitored rather than OS quotas. Hard crashes can leave
+temporary data and do not have a recovery journal. A pre-capture failure has a
+diagnostic but no fabricated source record. Raw private execution provenance can
+retain temporary mount paths; summaries omit them. HMAC is local integrity, not
+public attestation. New behavior was tested on Linux only.
+
+**Gate / next task:** local GHA-001..GHA-008, full deterministic Docker, package and
+documentation gates PASSED. Publish the authorized ten-commit branch/second PR
+and observe its CI; no remote success is inferred at this local checkpoint.
+Further scope (including InstaBox) remains a separate increment.
+
+## 2026-11-04 — PR #9 redacted-ref export review (four commits)
+
+**Authorization/base:** the owner authorized fixing the validated review in four
+additional commits, based on `b5cb1a7bd4eb242788ae339adaa5d9edb2188de0` on
+`feat/github-url-audit`. All four use author
+`haddybhaiya <harshsharma2k614@gmail.com>` and
+`Co-authored-by: Codex <codex@openai.com>`.
+
+**Cause/reproduction:** a real Git branch `api_key=demo` passes acquisition
+validation but storage redaction changes its labels to `api_key=[REDACTED]`.
+The record authenticates successfully, yet the original report reader rejects
+`[` as executable ref syntax. The pre-fix controlled Git check reproduced report
+exit 3 on an authenticated blocked audit, without target execution.
+
+**Changed:** distinguish strict live origin validation from reading masked stored
+labels. Raw selection and pre-storage origin validation remain strict. Stored
+ref labels containing the exact redaction mask are bounded display text; canonical
+URL, root scope and exact commit still undergo identity validation. Unmasked
+records retain full ref consistency checks; unaffected ref fields retain syntax
+checks. Reports authenticate first, preserve the masked labels, add
+`remote_ref_status: redacted-display-only` and tell readers to use `git_commit`.
+No redacted ref is fetched or executed. Existing affected authenticated records
+are readable without migration or an unredacted backup.
+
+The generic redactor and evidence writer are unchanged: secret redaction is not
+bypassed for metadata. No raw secret-bearing label is preserved. Hidden named-ref
+characters cannot be recovered or independently revalidated after storage; local
+HMAC authenticates what the controller originally observed, and exact source
+identity remains the captured commit. Masked/invalid URL or commit identities
+still fail validation. This does not add public attestation or remote workflows.
+
+**Tested (Linux/Python 3.12.14, existing locked tools/image):**
+
+| Completed check | Observed result |
+|---|---|
+| Reader/evidence/Git/report focused gate after commit 1 | 86 passed |
+| Summary/evidence focused gate after commit 2 | 33 passed |
+| Real Git source/CLI suite | 35 passed |
+| New actual Docker redacted branch/tag checks | 2 passed, 7 unrelated Docker cases deselected in that focused selection |
+| Final `pytest -m 'not live' -q` | **351 passed, 1 live deselected, 0 skips in 76.49s**, including all 29 real Docker cases; `.peeky/ref-redaction-review/gate.log` |
+| Ruff lint/format, strict mypy | Passed; 52 Python files formatted, 47 source/test files typed |
+| Docs, package and whitespace | 20-document gate, offline wheel build, isolated installed-wheel smoke and `git diff --check` passed |
+| Public/artifact integrity | 92 public manifest hashes refreshed/verified; all 21 wheel source modules and README match source |
+
+Regression coverage includes assignment-like branch/tag/default selections,
+qualified and fully masked labels, exporting after the original secret environment
+is removed, legacy stored record shape, secret suppression in JSON/Markdown,
+raw-ref rejection of masks, malformed fields, commit/scope/URL mismatches and HMAC
+tampering. Real Git acquisition uses the labeled local transport fixture. The two
+new PASS checks execute genuine reviewed scripts in offline Docker, independently
+verify container/source removal, then authenticate/export after cleanup. No live
+model requests or new public GitHub target execution were performed.
+
+**Docs updated:** redacted-label semantics in source/evidence contracts, assumption
+A-30, ADR-017 correction, phase tracker, this ledger and public manifest.
+**Known limits:** masked names are display-only; use the preserved commit for
+exact identity. Existing local HMAC/host trust, redaction completeness and URL
+workflow limits remain unchanged. **Gate / next task:** local GHA-006 review gate
+PASSED; publish the four commits and observe fresh PR CI. Remote success is pending
+at this local checkpoint and is not inferred from earlier runs.
