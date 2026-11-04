@@ -144,6 +144,21 @@ authentication; inconsistent signed origin fields are rejected. No source is
 refetched or executed during reporting. Origin identifies where source was
 obtained; local HMAC remains neither a public signature nor GitHub attestation.
 
+Secret redaction also applies to ref names. For example, a valid branch named
+`api_key=demo` is stored as `api_key=[REDACTED]`. Live selection still validates the
+original Git ref before fetching/storage. A stored label containing the exact
+redaction marker is read as display-only metadata, not another executable ref.
+Authentication, canonical URL, root scope and exact commit binding remain required;
+unredacted records retain full ref consistency checks. Masked names cannot be
+reconstructed or independently compared after their hidden characters are removed.
+
+JSON summaries label affected records `remote_ref_status: redacted-display-only`;
+Markdown tells the reader to use `git_commit` for the audited revision. Existing
+authenticated records with masked ref labels can be exported without rewriting
+them or retaining an unredacted copy. Fully masked labels work even after the
+secret environment used during storage is removed. No redacted label is reused
+for Git resolution, and URL/commit identities that cannot be validated still fail.
+
 Passport, diagnose, recheck and trial still require local source arguments.
 Passports explicitly reject URL audit evidence, preserving the existing local
 repository-binding contract. URL source refresh for those workflows, private

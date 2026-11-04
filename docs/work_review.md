@@ -485,3 +485,64 @@ public attestation. New behavior was tested on Linux only.
 documentation gates PASSED. Publish the authorized ten-commit branch/second PR
 and observe its CI; no remote success is inferred at this local checkpoint.
 Further scope (including InstaBox) remains a separate increment.
+
+## 2026-11-04 — PR #9 redacted-ref export review (four commits)
+
+**Authorization/base:** the owner authorized fixing the validated review in four
+additional commits, based on `b5cb1a7bd4eb242788ae339adaa5d9edb2188de0` on
+`feat/github-url-audit`. All four use author
+`haddybhaiya <harshsharma2k614@gmail.com>` and
+`Co-authored-by: Codex <codex@openai.com>`.
+
+**Cause/reproduction:** a real Git branch `api_key=demo` passes acquisition
+validation but storage redaction changes its labels to `api_key=[REDACTED]`.
+The record authenticates successfully, yet the original report reader rejects
+`[` as executable ref syntax. The pre-fix controlled Git check reproduced report
+exit 3 on an authenticated blocked audit, without target execution.
+
+**Changed:** distinguish strict live origin validation from reading masked stored
+labels. Raw selection and pre-storage origin validation remain strict. Stored
+ref labels containing the exact redaction mask are bounded display text; canonical
+URL, root scope and exact commit still undergo identity validation. Unmasked
+records retain full ref consistency checks; unaffected ref fields retain syntax
+checks. Reports authenticate first, preserve the masked labels, add
+`remote_ref_status: redacted-display-only` and tell readers to use `git_commit`.
+No redacted ref is fetched or executed. Existing affected authenticated records
+are readable without migration or an unredacted backup.
+
+The generic redactor and evidence writer are unchanged: secret redaction is not
+bypassed for metadata. No raw secret-bearing label is preserved. Hidden named-ref
+characters cannot be recovered or independently revalidated after storage; local
+HMAC authenticates what the controller originally observed, and exact source
+identity remains the captured commit. Masked/invalid URL or commit identities
+still fail validation. This does not add public attestation or remote workflows.
+
+**Tested (Linux/Python 3.12.14, existing locked tools/image):**
+
+| Completed check | Observed result |
+|---|---|
+| Reader/evidence/Git/report focused gate after commit 1 | 86 passed |
+| Summary/evidence focused gate after commit 2 | 33 passed |
+| Real Git source/CLI suite | 35 passed |
+| New actual Docker redacted branch/tag checks | 2 passed, 7 unrelated Docker cases deselected in that focused selection |
+| Final `pytest -m 'not live' -q` | **351 passed, 1 live deselected, 0 skips in 76.49s**, including all 29 real Docker cases; `.peeky/ref-redaction-review/gate.log` |
+| Ruff lint/format, strict mypy | Passed; 52 Python files formatted, 47 source/test files typed |
+| Docs, package and whitespace | 20-document gate, offline wheel build, isolated installed-wheel smoke and `git diff --check` passed |
+| Public/artifact integrity | 92 public manifest hashes refreshed/verified; all 21 wheel source modules and README match source |
+
+Regression coverage includes assignment-like branch/tag/default selections,
+qualified and fully masked labels, exporting after the original secret environment
+is removed, legacy stored record shape, secret suppression in JSON/Markdown,
+raw-ref rejection of masks, malformed fields, commit/scope/URL mismatches and HMAC
+tampering. Real Git acquisition uses the labeled local transport fixture. The two
+new PASS checks execute genuine reviewed scripts in offline Docker, independently
+verify container/source removal, then authenticate/export after cleanup. No live
+model requests or new public GitHub target execution were performed.
+
+**Docs updated:** redacted-label semantics in source/evidence contracts, assumption
+A-30, ADR-017 correction, phase tracker, this ledger and public manifest.
+**Known limits:** masked names are display-only; use the preserved commit for
+exact identity. Existing local HMAC/host trust, redaction completeness and URL
+workflow limits remain unchanged. **Gate / next task:** local GHA-006 review gate
+PASSED; publish the four commits and observe fresh PR CI. Remote success is pending
+at this local checkpoint and is not inferred from earlier runs.

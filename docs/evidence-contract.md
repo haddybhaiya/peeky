@@ -10,6 +10,15 @@ are finalized after temporary-source contexts close. Fetch/capture failures that
 never establish a source return diagnostics without fabricated evidence.
 Summary exports validate/preserve URL provenance; URL passports remain unsupported.
 
+Ref strings can be masked by the same secret redaction applied to logs. Stored
+`[REDACTED]` ref labels are display-only; readers retain canonical URL/root-commit
+checks and HMAC verification rather than parsing the mask as a new Git ref. Raw
+selection still uses strict validation before storage. Summaries disclose
+`remote_ref_status: redacted-display-only`; exact identity comes from `git_commit`.
+The audit schema and storage redaction rules are unchanged, including support for
+previously stored authenticated records. Unmasked origin inconsistencies and
+identity/authentication tampering remain errors.
+
 Each result contains ordered step ID/command, observed target exit code (absent when no target exit was observed), full bounded redacted stdout/stderr, outcome, duration, reason and runtime provenance. Provenance includes requested/resolved digest, actual image/container IDs, source/policy hashes, controller start/end UTC and deadline, actual Docker State, inspected isolation, create argv, redacted transcript hashes, raw input byte counts, completeness and verified owned cleanup. Target code cannot edit these controller-owned observations. Exact controls and limits are in `phase2-runner.md`.
 
 PASS requires the permitted command's matching result and integer zero exit, resolved reviewed image, matching source/policy, complete logs, actual target start and verified cleanup. No-op, unsupported stages, missing image/daemon, missing executable, output/memory limits and ambiguous observations cannot pass. An actual target nonzero exit is FAIL, including 125/126/127 when State proves target execution. Timeout is retained as a step outcome and reduces to INCONCLUSIVE. A valid observed failure is not hidden by later incomplete coverage. Coverage counts planned versus observed result slots; observed coverage is not the same as successful execution. BLOCKED before execution is not target FAIL.

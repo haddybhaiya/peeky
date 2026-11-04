@@ -117,3 +117,9 @@ Local implementation gate PASSED; remote CI is pending at this checkpoint. The
 new branch is `feat/github-url-audit`. Cloud sandboxes, dependency preparation,
 multi-step setup and direct URL passport/model workflows remain later work.
 Next: review this PR and observe its CI before choosing the next increment.
+
+PR #9 review follow-up (2026-11-04): the owner authorized four additional commits
+for GHA-006 redacted-ref export. Stored masks are display labels while raw selection
+and captured identity remain validated. Unit, real Git and actual Docker branch/tag
+regressions cover export, secret suppression, unchanged outcomes and tamper denial.
+Exact final gate results are in the latest work-review entry; cloud scope is unchanged.

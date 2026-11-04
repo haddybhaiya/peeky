@@ -44,11 +44,11 @@
     },
     {
       "path": "docs/assumptions.md",
-      "sha256": "7149ab3b2ead0c9c64a02787e038447a39c50c248973c50c8e45485c7ee769f5"
+      "sha256": "904b7f8890c755d20360f592754b81f023320f2e2427b85971ac073ebdc67c16"
     },
     {
       "path": "docs/decisions.md",
-      "sha256": "cee24594f9cb2e070707ba3dd0a15b3f794fee7942729b8a95845a219fd18deb"
+      "sha256": "e270abaa5dd57e6c2ea8b76d80355b9f8dcc65230d4af64470657cb93ad574ef"
     },
     {
       "path": "docs/demo-plan.md",
@@ -60,11 +60,11 @@
     },
     {
       "path": "docs/evidence-contract.md",
-      "sha256": "8b20e2f413b8545ef28c5cbd8417706c63ca477590bc6cefd1c85573ac15219f"
+      "sha256": "82645b10611b7e3c4e30746c16c647f78fe960e61834f9e76b23bfdba5685537"
     },
     {
       "path": "docs/github-sources.md",
-      "sha256": "cfea42a9eb444c53a653e0e731c0d079a5f953dd95dcced4b0a92a55efd35f50"
+      "sha256": "281665abd93fa72d26167e33f8dccaef548551a88af01a2cb893417e431a06c2"
     },
     {
       "path": "docs/invariants.md",
@@ -80,7 +80,7 @@
     },
     {
       "path": "docs/phase.md",
-      "sha256": "651c8ec2cd04816f151e5217c4d3fdea78a068fc12892f8f427a1d5766d07090"
+      "sha256": "fc5d4d6c5151fdf5ef339a10f8a71fb2a60dfebbb806cd4b57dc6d07aca825bb"
     },
     {
       "path": "docs/phase2-runner.md",
@@ -132,7 +132,7 @@
     },
     {
       "path": "docs/work_review.md",
-      "sha256": "ac81b3474ef3180a6c57411865f4004b73c021e457ebef02df8beef3664cdd87"
+      "sha256": "8bf52c597148deb89521e080be7fed487649384879795cc4a68027ad211ed5fd"
     },
     {
       "path": "peeky.example.toml",
@@ -188,7 +188,7 @@
     },
     {
       "path": "src/peeky/github.py",
-      "sha256": "9b6592cffdb41c968fb43930890c818cd5e8ee2a4c5c1044f8e91165de823abe"
+      "sha256": "baad41b867678bc42920e7398d860b7a03764d0bbe937059b822d1955dd70b01"
     },
     {
       "path": "src/peeky/hosttools.py",
@@ -236,7 +236,7 @@
     },
     {
       "path": "src/peeky/reports.py",
-      "sha256": "6c8d08d15e2e107169a8488a8cef482e3b70922be42ca27a3931d3e3d76b21d6"
+      "sha256": "a7e3a8a0a18064345d2aceb3793352552b658e58521af85de57bdd532215e4fd"
     },
     {
       "path": "src/peeky/runner.py",
@@ -284,11 +284,11 @@
     },
     {
       "path": "tests/integration/test_github_audit_docker.py",
-      "sha256": "e890f768b27dfd41fd870728aef18d1349e3ee4cf6bf1d84a3dccb6903c9f009"
+      "sha256": "4b65c21b576e121070513828a54daedeaa2ac8b8953e65984a911d1f87ead1d3"
     },
     {
       "path": "tests/integration/test_github_source.py",
-      "sha256": "4646b98dd8e23f8998c47e4e26dd9b65b217225668f1d8bad2d4ad092d271cbb"
+      "sha256": "f646a2dfbb031b21aded7e6806f3597763460c2985d95dbdd20ba54e468bd87e"
     },
     {
       "path": "tests/integration/test_repair_docker.py",
@@ -316,7 +316,7 @@
     },
     {
       "path": "tests/unit/test_evidence.py",
-      "sha256": "ab4d2deb9586baedeec842b93b2e9e7fb949accb17627c60bc9817c1341f46d8"
+      "sha256": "de1bdb5446b1de63c92f907352a2bfd39a4642b8963416a5042d68189f756dc0"
     },
     {
       "path": "tests/unit/test_github.py",
@@ -352,7 +352,7 @@
     },
     {
       "path": "tests/unit/test_reports.py",
-      "sha256": "867ea7b9f5f2a3abb5c50b0366d6d104e1b30f13a4ab479fe81efaae5caa9477"
+      "sha256": "86ffdf30d8be66a9936e2fbc971deff6e39180e13f7b5a0356f0abe6787b3d18"
     },
     {
       "path": "tests/unit/test_runner.py",

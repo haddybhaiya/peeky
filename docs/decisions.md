@@ -135,3 +135,13 @@ target outcomes use genuine offline Docker. Timeout and daemon-loss cases use
 the real runner; the cleanup case removes its owned container and explicitly
 simulates a lost acknowledgement. Independent daemon/source absence checks and
 authenticated report round trips verify the final lifecycle.
+
+**ADR-017 ref-redaction review correction (2026-11-04):** secret redaction applies
+to all stored strings, including branch/tag names. Keep that redaction intact.
+Distinguish strict live origin validation from reading authenticated stored labels.
+When a ref contains the exact redaction mask, validate canonical URL, root scope
+and captured commit without reconstructing a hidden name. Unmasked fields still
+require valid ref syntax, and unmasked records keep full selection consistency.
+Reports disclose masked labels as display-only and use the recorded commit for
+exact identity. This supports affected existing records without migration or raw
+secret retention. Reports never use masked labels to fetch or execute anything.
