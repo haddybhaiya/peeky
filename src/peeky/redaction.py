@@ -19,6 +19,7 @@ _TOKEN = re.compile(
     r"\b(?:gh[pousr]_[A-Za-z0-9_]{12,}|github_pat_[A-Za-z0-9_]{12,}"
     r"|sk-[A-Za-z0-9_-]{12,}|AKIA[A-Z0-9]{16})\b"
 )
+_INSTABOX_KEY = re.compile(r"(?<![A-Za-z0-9_-])ibk_[A-Za-z0-9_-]{48}(?![A-Za-z0-9_-])")
 _PRIVATE = re.compile(
     r"-----BEGIN [^-]*PRIVATE KEY-----.*?(?:-----END [^-]*PRIVATE KEY-----|\Z)", re.DOTALL
 )
@@ -39,6 +40,7 @@ def redact(text: str) -> str:
     text = _AUTH.sub(lambda m: m[1] + MASK, text)
     text = _ASSIGN.sub(lambda m: m[1] + MASK, text)
     text = _TOKEN.sub(MASK, text)
+    text = _INSTABOX_KEY.sub(MASK, text)
     return "".join(c for c in text if c in "\n\t" or ord(c) >= 32 and ord(c) != 127)
 
 

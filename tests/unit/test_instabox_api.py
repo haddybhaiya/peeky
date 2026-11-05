@@ -13,6 +13,7 @@ from peeky.backends.instabox_api import (
     InstaboxError,
     MetadataResponse,
 )
+from peeky.redaction import redact
 
 KEY = "ibk_" + "a" * 48
 
@@ -93,3 +94,20 @@ def test_malformed_or_oversized_metadata_cannot_succeed(body: bytes) -> None:
 
     with pytest.raises(InstaboxError):
         InstaboxClient(InstaboxConfig(KEY), transport).get("/v1/me")
+
+
+@pytest.mark.parametrize("suffix", ["a", "_", "-"])
+def test_instabox_key_format_is_redacted_without_environment_context(
+    monkeypatch: pytest.MonkeyPatch, suffix: str
+) -> None:
+    monkeypatch.delenv("INSTABOX_API_KEY", raising=False)
+    key = "ibk_" + "a" * 47 + suffix
+    InstaboxConfig(key).validate()
+    assert redact("copied credential: " + key) == "copied credential: [REDACTED]"
+
+
+@pytest.mark.parametrize("template", ["../ci", "ci?token=secret", "ci\n", "sn_private_snapshot"])
+def test_invalid_template_configuration_is_safe_and_offline(template: str) -> None:
+    with pytest.raises(InstaboxError) as error:
+        InstaboxClient(InstaboxConfig(KEY, template_id=template))
+    assert error.value.code == "INVALID_TEMPLATE" and template not in str(error.value)
