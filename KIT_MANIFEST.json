@@ -44,11 +44,11 @@
     },
     {
       "path": "docs/assumptions.md",
-      "sha256": "d686333d67da513a1d95417a6772afff2b92520568c88f3ba9c9bea85bc9dd15"
+      "sha256": "c1528ef1a41aad10a4557d43e23ad10d45326ba35ea8524e388f75ae84cc0d4d"
     },
     {
       "path": "docs/decisions.md",
-      "sha256": "a7f7df54390d9d45bf794bb4b609b782e5a1511ab285acd933ea0cbdd89a1e4f"
+      "sha256": "840999f1a478e38811d6c9d0b9821d253189d023a61dd45db4fd9ef0c9171472"
     },
     {
       "path": "docs/demo-plan.md",
@@ -68,7 +68,7 @@
     },
     {
       "path": "docs/instabox-backend.md",
-      "sha256": "1199e0ad4a51f807b5517dc6e92b84eac46572f9f9b454d58bc3e00b1f5161bb"
+      "sha256": "54bd4f9db1ab59ef8c89ecebf8c997fd8361a97847664ea1abcedc1e25251979"
     },
     {
       "path": "docs/invariants.md",
@@ -84,7 +84,7 @@
     },
     {
       "path": "docs/phase.md",
-      "sha256": "26f011b4e53ae94b51cc4a53972c5f68fb5e4c2dfae778e5fedf490512182aa9"
+      "sha256": "af901a8f450219098c9d1ebd757074fd3cf5a0314f97658fa2930a110c94d0a5"
     },
     {
       "path": "docs/phase2-runner.md",
@@ -136,7 +136,7 @@
     },
     {
       "path": "docs/work_review.md",
-      "sha256": "98e68b3a7acd328bb666cddb5ec5b0f01bd418bbe7e3dd7e84852ca8e72bce08"
+      "sha256": "115a98233572dd26ebe81bf601c6b5fef5589ca4b39fc81be9f63eb598bf9745"
     },
     {
       "path": "peeky.example.toml",
@@ -192,7 +192,7 @@
     },
     {
       "path": "src/peeky/backends/instabox_api.py",
-      "sha256": "36c28b4ead2f7ac68a49afb096fd9d75f7be1ccfe508e99d1812e3fe655a7efc"
+      "sha256": "4ec00e7cb34e170f3fc4b0670c856b147bb51d5480cfeb25379f6463da296a2b"
     },
     {
       "path": "src/peeky/benchmark.py",
@@ -368,7 +368,7 @@
     },
     {
       "path": "tests/unit/test_instabox_transport.py",
-      "sha256": "5c7c2fdadae5b7d534d0bd87686ccf0e81975eda4cb7875878e2fca698768853"
+      "sha256": "01e282bfbbf21f259c5016bc8ae9271cf3ac8548772651ee04dab3ca3a24b0b2"
     },
     {
       "path": "tests/unit/test_parser.py",

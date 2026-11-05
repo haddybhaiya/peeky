@@ -178,3 +178,10 @@ back to another executor. Cloud create/run/delete/expiry, source transfer,
 equivalent isolation, evidence and orphan recovery require separately reviewed
 work. Injected provider/transport tests establish the read contract; real Docker
 regressions establish local compatibility. Neither claims live InstaBox access.
+
+**ADR-018 HTTP-error review correction (2026-11-05):** once a non-200 status is
+known, close its response without consuming the unused body and return the status
+for existing safe error mapping. Body limits and read deadlines apply to successful
+metadata responses. This preserves actionable authentication/access/rate-limit
+diagnoses even if error bodies would exceed budgets or stall; redirects still
+fail without forwarding credentials, and every response remains closed.

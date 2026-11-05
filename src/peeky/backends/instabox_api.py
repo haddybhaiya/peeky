@@ -99,6 +99,8 @@ def metadata_transport(
         except urllib.error.HTTPError as error:
             response = error
         with response:
+            if response.code != 200:
+                return MetadataResponse(response.code, b"")
             return MetadataResponse(response.code, _read_metadata(response, deadline, limit))
     except InstaboxError:
         raise

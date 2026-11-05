@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from peeky.backends import instabox_api
+from peeky.backends.instabox import InstaboxBackend
 
 KEY = "ibk_" + "a" * 48
 
@@ -66,6 +67,55 @@ def test_production_transport_closes_oversized_metadata(monkeypatch: pytest.Monk
     with pytest.raises(instabox_api.InstaboxError) as caught:
         instabox_api.metadata_transport(request(), 5.0, 8)
     assert caught.value.code == "RESPONSE_LIMIT" and response.closed
+
+
+@pytest.mark.parametrize(
+    ("status", "reason"),
+    [(401, "AUTHENTICATION_FAILED"), (403, "ACCESS_DENIED"), (429, "RATE_LIMITED")],
+)
+@pytest.mark.parametrize("body_mode", ["oversized", "stalled"])
+@pytest.mark.parametrize("raised_http_error", [False, True])
+def test_known_http_failure_preserves_status_without_reading_body(
+    monkeypatch: pytest.MonkeyPatch,
+    status: int,
+    reason: str,
+    body_mode: str,
+    raised_http_error: bool,
+) -> None:
+    class ErrorBody(io.BytesIO):
+        read_calls = 0
+        code = status
+
+        def read1(self, size: int | None = -1) -> bytes:
+            self.read_calls += 1
+            if body_mode == "stalled":
+                raise TimeoutError(KEY)
+            return super().read1(size)
+
+    body = ErrorBody(KEY.encode() + b"x" * instabox_api.MAX_METADATA_BYTES)
+    error = urllib.error.HTTPError(
+        instabox_api.API_URL + "/v1/me", status, "test", HTTPMessage(), body
+    )
+    requests: list[str] = []
+
+    def open_response(req: urllib.request.Request, timeout: float) -> object:
+        requests.append(req.full_url)
+        if raised_http_error:
+            raise error
+        return body
+
+    monkeypatch.setattr(
+        urllib.request,
+        "build_opener",
+        lambda *args: SimpleNamespace(open=open_response),
+    )
+    result = InstaboxBackend(instabox_api.InstaboxConfig(KEY)).doctor()
+    assert result.reason == reason
+    assert result.details["http_status"] == status
+    assert result.preflight_ok is False and result.ready is False
+    assert KEY not in str(result.to_dict())
+    assert requests == [instabox_api.API_URL + "/v1/me"]
+    assert body.read_calls == 0 and body.closed
 
 
 def test_production_transport_checks_elapsed_budget_between_reads(

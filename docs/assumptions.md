@@ -1,5 +1,7 @@
 # Assumptions and checks
 
+- A-33: Reading an unused provider error body cannot change a known HTTP diagnosis. **Invalidated by PR #10 review: an oversized or stalled 401/403/429 body replaced authentication/access/rate-limit failures with response-limit/timeout errors and lost the status. Non-200 responses now close without reading their bodies; twelve production-transport regressions preserve the reason/status, closure, zero body reads and secret suppression.**
+
 - A-01: Candidate user has Docker on a suitable host. **On 2026-10-27 the owner enabled Docker; local Linux Docker Engine 29.1.3 completed the real integration gate. This does not establish suitability for unknown hostile repositories or a second-machine/CI result.**
 - A-02: Python image can execute selected offline fixture commands. **Verified locally with the reviewed pinned official Python digest: good PASS, bad FAIL, no-op INCONCLUSIVE; authenticated redacted records retained.**
 - A-03: README annotations are acceptable for initial adopter and demo. **Likely friction; compare manual plan later.**

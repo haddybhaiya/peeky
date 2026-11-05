@@ -146,3 +146,13 @@ plan access and physical capacity remain unverified. No new CI result is claimed
 This branch stays local as requested; no remote PR is opened. Next authorized
 implementation would require a separate cloud lifecycle/execution increment;
 source upload, owned VM creation/deletion/expiry and cloud evidence remain pending.
+
+PR #10 publication/review update (2026-11-05): the owner subsequently authorized
+the push and PR creation, then one additional fix commit and push for BF-007.
+Non-200 metadata responses now close without body reads, preserving the known
+HTTP status and mapped reason. Twelve regressions cover 401/403/429 with oversized
+and stalled bodies, through returned responses and raised HTTP errors. Focused
+gate: 81 passed; full core: 408 passed, 30 Docker/live deselected, 0 skips.
+Lint/type/docs and offline installed-wheel gates passed. Existing Docker results
+above are historical; this controller-only correction did not rerun Docker or
+perform any live provider call. Fresh PR CI remains unobserved at this checkpoint.

@@ -75,7 +75,9 @@ between response reads, with a 256 KiB response-body budget. The deadline is not
 an OS wall-clock limit: blocking I/O can overshoot it before control returns.
 Duplicate JSON fields, non-finite values, malformed UTF-8/JSON and incomplete
 required metadata fail closed. Error bodies and raw exception text never become
-user-facing diagnostics. Responses close on success and failure.
+user-facing diagnostics. Non-200 responses close without reading their unused
+bodies, preserving the known HTTP status even if an error body is oversized or
+would stall. Responses close on success and failure.
 
 These are controller account requests. No target code, README, model output or
 repository input chooses provider URLs, permissions or lifecycle operations. The

@@ -616,3 +616,40 @@ Linux only. No CI result or live provider authentication is inferred.
 fixture/package/docs gates PASSED. Keep this increment local as requested: no
 push and no remote PR creation. The next implementation increment would add the
 reviewed cloud lifecycle and audit execution, followed by recovery/reconciliation.
+
+## 2026-11-05 — PR #10 HTTP-error body review (one commit)
+
+**Authorization/base:** after authorizing publication of the eight-commit
+foundation as PR #10, the owner authorized one fix commit and push from
+`1283452cc71be295aab436a763638c5d49ebd152`. Preserve the owner author/committer and
+Codex co-author trailer. The earlier local-only checkpoint above is historical.
+
+**Cause/changed:** production transport read error bodies before mapping their
+already-known HTTP status. Controlled 401/403/429 responses reproduced oversized
+bodies yielding RESPONSE_LIMIT and stalled bodies yielding REQUEST_TIMEOUT, both
+without `http_status`. Non-200 responses now close immediately without body reads
+and preserve their status for existing safe diagnosis. Successful metadata reads
+retain the same size/deadline/JSON checks. Redirect, credential and retry policy
+are unchanged.
+
+**Tested:** a new regression first failed against the old transport with
+RESPONSE_LIMIT instead of AUTHENTICATION_FAILED. After the fix, all 81 focused
+API/transport/backend/CLI tests passed. Twelve new combinations exercise
+401/403/429, oversized/stalled bodies and both direct responses and raised HTTP
+errors, checking exact mapped reason/status, response closure, zero body reads,
+one request and no key disclosure. Full `.venv/bin/pytest -q`: **408 passed,
+30 deselected (29 Docker + 1 live), 0 skips in 13.24s**; log retained at
+`.peeky/instabox-review/core.log`. Ruff lint/format (62 files), strict mypy (57
+files), required docs (21), whitespace, offline wheel build and isolated
+installed-wheel smoke passed. The test response override's type annotation was
+corrected to match BytesIO before the successful type gate.
+
+**Docs updated:** backend response semantics, BF-007 phase checkpoint, A-33,
+ADR-018 correction, this ledger and the 103-file public manifest. Packaged source
+modules/README and manifest hashes were verified against the checkout.
+
+**Known limits / gate / next task:** local BF-007 review gate PASSED. Provider
+responses are simulated through the production transport; no live account/model
+request or VM operation occurred. Docker execution policy is unchanged; Docker
+tests were not repeated for this account-transport-only fix. Push the one commit
+to the existing PR as authorized and observe fresh CI; no new CI success is claimed.
