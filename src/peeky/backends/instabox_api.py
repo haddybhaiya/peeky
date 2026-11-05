@@ -10,6 +10,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from http.client import HTTPException
 from typing import Any
 
 API_URL = "https://api.instabox.sh"
@@ -101,8 +102,11 @@ def metadata_transport(
             return MetadataResponse(response.code, _read_metadata(response, deadline, limit))
     except InstaboxError:
         raise
-    except (OSError, urllib.error.URLError) as error:
-        code = "REQUEST_TIMEOUT" if isinstance(error, TimeoutError) else "CONNECTION_FAILED"
+    except (OSError, urllib.error.URLError, HTTPException) as error:
+        timed_out = isinstance(error, TimeoutError) or isinstance(
+            getattr(error, "reason", None), TimeoutError
+        )
+        code = "REQUEST_TIMEOUT" if timed_out else "CONNECTION_FAILED"
         raise InstaboxError(
             code, "Could not read InstaBox account metadata; check connectivity and TLS setup"
         ) from None

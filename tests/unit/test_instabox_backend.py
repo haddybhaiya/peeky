@@ -105,3 +105,46 @@ def test_cloud_execution_never_reads_key_or_contacts_api(
 def test_unknown_backend_is_not_an_implicit_docker_fallback() -> None:
     with pytest.raises(BackendUnavailable):
         get_backend("unknown")
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        {"id": "ci", "arch": "x86_64", "creatable": "true"},
+        {"id": "ci", "arch": "x86_64", "hidden": "false"},
+        {"id": "ci", "arch": "aarch64", "creatable": True},
+        {"id": "ci", "arch": "x86_64"},
+    ],
+)
+def test_unknown_or_malformed_templates_do_not_pass(template: dict[str, object]) -> None:
+    data = responses()
+    data["/v1/templates"] = {"templates": [template]}
+    assert not backend(data, []).doctor().preflight_ok
+
+
+def test_documented_legacy_hidden_flag_is_understood() -> None:
+    data = responses()
+    data["/v1/templates"] = {"templates": [{"id": "ci", "arch": "x86_64", "hidden": False}]}
+    assert backend(data, []).doctor().preflight_ok
+
+
+@pytest.mark.parametrize(
+    "status,reason",
+    [
+        (401, "AUTHENTICATION_FAILED"),
+        (403, "ACCESS_DENIED"),
+        (429, "RATE_LIMITED"),
+        (503, "SERVICE_UNAVAILABLE"),
+    ],
+)
+def test_readiness_http_failures_are_safe_and_not_retried(status: int, reason: str) -> None:
+    calls: list[str] = []
+
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        calls.append(request.selector)
+        return MetadataResponse(status, KEY.encode())
+
+    result = InstaboxBackend(InstaboxConfig(KEY), transport).doctor()
+    assert result.reason == reason and not result.preflight_ok
+    assert KEY not in json.dumps(result.to_dict())
+    assert calls == ["/v1/me"]
