@@ -24,6 +24,7 @@ REQUIRED = [
     "docs/phase4-onboarding.md",
     "docs/phase5-review.md",
     "docs/github-sources.md",
+    "docs/instabox-backend.md",
 ]
 
 

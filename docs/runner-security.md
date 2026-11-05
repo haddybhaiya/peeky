@@ -22,6 +22,15 @@ Online dependency installation/prefetch from target README remains deferred. The
 
 ## Prohibited shortcuts
 
+The post-MVP InstaBox foundation adds only explicit controller account reads at
+the fixed official HTTPS API. Credentials are environment-only, omitted from
+output/repr and never mounted or passed to target code. Redirects are blocked;
+operator proxy/CA configuration remains trusted. Its bounded metadata checks do
+not establish write/delete scopes, template plan access, physical capacity or
+cloud execution readiness. The selected cloud audit fails before reading keys or
+sources, with no Docker/host fallback. See `instabox-backend.md` for exact limits.
+Cloud VM lifecycle and execution controls have not been implemented.
+
 - No host target execution or `shell=True` fallback.
 - No privileged Docker, Docker socket, host network/PID namespace, root user, credential passthrough, mutable host source mounts or broad container pruning.
 - No target CI/README/AGENTS/model content controlling permissions, evidence verdicts, budgets, image trust or cleanup ownership.

@@ -1,5 +1,6 @@
 """Build/install the produced wheel in a clean venv and run CLI smoke."""
 
+import json
 import os
 import subprocess
 import sys
@@ -57,6 +58,48 @@ def main() -> int:
                 text=True,
             ).stdout
             assert "--ref" in help_text and "GitHub" in help_text
+            if command == "audit":
+                assert "--backend" in help_text and "instabox" in help_text
+        doctor_help = subprocess.run(
+            [cli, "doctor", "--help"],
+            check=True,
+            cwd=tmp,
+            env=env,
+            capture_output=True,
+            text=True,
+        ).stdout
+        assert "--backend" in doctor_help and "instabox" in doctor_help
+        # These installed-package checks must remain offline even on a keyed host.
+        cloud_env = env.copy()
+        for setting in ("INSTABOX_API_KEY", "INSTABOX_API_URL", "PEEKY_INSTABOX_TEMPLATE"):
+            cloud_env.pop(setting, None)
+        cloud_check = subprocess.run(
+            [cli, "doctor", "--backend", "instabox", "--json"],
+            check=False,
+            cwd=tmp,
+            env=cloud_env,
+            capture_output=True,
+            text=True,
+        )
+        readiness = json.loads(cloud_check.stdout)
+        assert cloud_check.returncode == 3 and readiness["reason"] == "MISSING_API_KEY"
+        assert readiness["ready"] is False and readiness["execution_supported"] is False
+        cloud_audit = subprocess.run(
+            [
+                cli,
+                "audit",
+                "https://github.com/fixture/project",
+                "--backend",
+                "instabox",
+                "--approve",
+            ],
+            check=False,
+            cwd=tmp,
+            env=cloud_env,
+            capture_output=True,
+            text=True,
+        )
+        assert cloud_audit.returncode == 3 and "not implemented" in cloud_audit.stderr
         unapproved = subprocess.run(
             [cli, "audit", "https://github.com/fixture/project", "--ref", "main"],
             check=False,
@@ -72,8 +115,10 @@ def main() -> int:
                 python,
                 "-I",
                 "-c",
-                "from peeky.github import parse_url; "
-                "assert parse_url('https://github.com/o/r.git').url == 'https://github.com/o/r'",
+                "from peeky.github import parse_url; from peeky.backends import get_backend; "
+                "assert parse_url('https://github.com/o/r.git').url == 'https://github.com/o/r'; "
+                "assert get_backend('docker').execution_supported; "
+                "assert not get_backend('instabox').execution_supported",
             ],
             check=True,
             cwd=tmp,

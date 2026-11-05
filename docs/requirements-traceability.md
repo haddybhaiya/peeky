@@ -122,3 +122,16 @@ owned-container/source absence and durable authenticated report export. Evidence
 and summary units reject origin tampering, mismatches and unsupported passports.
 Installed-wheel smoke checks URL/ref help and denial before approval. Existing
 core/sandbox CI selectors automatically include the new source and Docker tests.
+
+## Post-MVP InstaBox foundation mapping
+
+BF-001..BF-008 are mapped to concrete behavior and test files in
+[the backend acceptance table](instabox-backend.md#foundation-acceptance-gates).
+The new backend, API and transport units cover fixed-origin read-only requests,
+bounded failures, strict metadata, account/template/quota states and honest
+unsupported execution. CLI smoke proves default Docker compatibility, approval
+ordering, key-free rejection before cloud acquisition and safe JSON/text output.
+Installed-wheel smoke exercises the packaged backend registry, backend help,
+missing-key doctor and disabled cloud audit outside the checkout without network.
+Existing real Docker/URL/report tests remain required; no live cloud execution
+or authenticated InstaBox account check is claimed by injected metadata tests.

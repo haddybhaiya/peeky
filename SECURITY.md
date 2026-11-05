@@ -7,3 +7,10 @@ Controls: no target host execution fallback; installed-tool lookup independent o
 Remaining risks: compromised host/kernel/runtime/key owner, hostile concurrent host mutation, unknown secret formats, controller hard termination/daemon loss and data-dependent scripts. Model calls are disabled by default; the opted-in BYOK Gemma proposal flow has bounded disclosure, strict README-only validation and digest-bound human approval (see `docs/phase3-repair.md`). Arbitrary dependency fetching and public scans remain unimplemented. Local HMAC is not a public signature or third-party execution proof. Verified local fixture constraints do not establish a hardened multi-tenant sandbox. See `docs/runner-security.md`, `docs/phase2-runner.md` and `docs/threat-model.md`.
 
 No GitHub issue should disclose exploitable security details. Report vulnerabilities privately to the repository owner by GitHub security advisory once configured. Do not claim this template's contact channel has been set up.
+
+The optional InstaBox backend foundation reads account metadata only. It accepts
+an environment-provided key for the fixed official HTTPS API, rejects redirects,
+bounds responses and hides provider error bodies. No VM is created or deleted,
+and cloud audits remain disabled. The trusted operator's proxy/CA setup remains
+part of the credential boundary; see `docs/instabox-backend.md`. InstaBox key
+patterns join the existing redaction rules; this is not complete secret discovery.

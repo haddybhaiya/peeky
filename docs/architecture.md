@@ -38,6 +38,7 @@ Repository snapshot + README parser ----> Reviewable step plan
 - `domain.py`: frozen source/policy identities, canonical plan hashes and controller-owned run transitions.
 - `policy.py`: trusted allowlist and no shell metacharacters, independent of model.
 - `runner.py`: snapshot-only, digest-allowlisted Docker create/attach/inspect/owned-cleanup controller; target code runs only in restricted containers with bounded/redacted streams.
+- `backends/`: shared `SandboxBackend` interface and explicit `BackendReadiness`; the Docker adapter delegates to the existing runner. The selected InstaBox backend performs bounded, fixed-origin account metadata GETs only. Cloud execution always fails closed before credentials or source acquisition; account preflight never implies audit readiness. No runner/evidence policy is relaxed. See `instabox-backend.md`.
 - `evidence.py`: deterministic reducer, observed coverage, redacted log hashes and atomic exclusive records; no model authority over success verdicts.
 - `images.py`, `redaction.py`, `provenance.py`: reviewed digest allowlist, bounded collection/storage redaction and private per-user controller HMAC integrity.
 - `passport.py`: drafts source/commit/policy/plan-bound candidate guidance only after schema 1.2 local authentication and complete runtime-evidence checks; existing output is never overwritten. Its embedded HMAC certificate binds exact guidance, full source, evidence bytes, run and image. Public third-party attestation remains unsupported; repair assurance requires a separate approved fresh recheck.
@@ -56,7 +57,14 @@ Phase 1 implements the controller transitions through INSPECTED, APPROVED, SANDB
 
 Record exact target revision, README hash, Git dirty state, resolved image digest/ID, commands, policy, isolation, runtime mode and evidence SHA for every comparison. Phase 2 enforces a reviewed cached digest in execution and CI setup, measures effective container constraints and records actual State/start/end/duration. It supports one command per audit; multi-step installation comparisons are unsupported. Never compare altered setup environments as causal proof. Local fixture results are not generalized benchmark evidence.
 
-## Interface contracts (proposed)
+## Interface contracts
+
+`backends/base.py` defines the implemented `SandboxBackend` protocol:
+`doctor(avoid) -> BackendReadiness` and
+`execute(step, source_snapshot, image, timeout) -> StepResult`, with backend name
+and execution-support properties. Readiness separates read-only preflight from
+execution support. Only Docker implements execution in this increment. Other
+interfaces below remain design sketches rather than additional implementations.
 
 ```python
 class StepExtractor(Protocol):
