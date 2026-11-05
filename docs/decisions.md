@@ -145,3 +145,36 @@ require valid ref syntax, and unmasked records keep full selection consistency.
 Reports disclose masked labels as display-only and use the recorded commit for
 exact identity. This supports affected existing records without migration or raw
 secret retention. Reports never use masked labels to fetch or execute anything.
+
+# ADR-018: Separate backend preflight from execution; introduce InstaBox read-only
+
+The owner authorized one local backend-foundation increment in at most twelve
+commits, without pushing. Introduce a controller-owned `SandboxBackend` protocol
+and a thin Docker adapter. Audit selection is explicit (`--backend`, default
+`docker`); existing pinned/offline execution, evidence schema 1.2, source and
+approval boundaries remain unchanged. Repair and onboarding still use their
+reviewed Docker runner directly; this is not a generic cloud workflow framework.
+
+Add environment-only BYO InstaBox configuration and an allowlisted account client
+using the Python standard library, without new runtime dependencies. Keep the
+official HTTPS API origin fixed to avoid disclosing credentials to arbitrary
+endpoints. Preserve trusted operator proxy/CA setup and TLS verification; deny
+redirects and automatic retries. Bound metadata bodies and socket/read deadlines,
+reject ambiguous JSON and expose only safe controller-selected values/messages.
+Do not persist the key, offer it as a CLI argument or source Gemma `.env` files.
+Provider key patterns redact independently of environment state.
+
+The selected doctor reads identity, templates and usage only. Official docs do
+not expose scopes in `/v1/me`; reads cannot prove create/delete permissions,
+template-plan access or physical capacity. Keep those checks unknown. Separate
+`preflight_ok` from `execution_supported` and `ready`, so a successful read-only
+check returns exit 0 without falsely advertising executable cloud audits. Usage
+zero limits require explicit unlimited metadata; absent disambiguation fails
+conservatively. No mutating provider methods exist in this increment.
+
+Reject selected InstaBox audits before reading keys, acquiring sources, checking
+Docker or writing evidence, while preserving approval-first behavior. Never fall
+back to another executor. Cloud create/run/delete/expiry, source transfer,
+equivalent isolation, evidence and orphan recovery require separately reviewed
+work. Injected provider/transport tests establish the read contract; real Docker
+regressions establish local compatibility. Neither claims live InstaBox access.
