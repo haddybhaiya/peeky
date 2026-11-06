@@ -142,8 +142,16 @@ def _audit_source(
     if not readiness.ready:
         run.advance(RunState.BLOCKED)
         data = report(repo, image, steps, [], captured.identity, run, DEFAULT_POLICY)
-        data["reason"] = "Docker daemon unavailable; no target execution"
-        print("Docker daemon unavailable; refusing host execution.", file=sys.stderr)
+        if backend.name == "docker":
+            data["reason"] = "Docker daemon unavailable; no target execution"
+        else:
+            data["reason"] = f"{backend.name.capitalize()} unavailable: {readiness.message}"
+        msg = (
+            "Docker daemon unavailable; refusing host execution."
+            if backend.name == "docker"
+            else f"{backend.name.capitalize()} unavailable; refusing host execution."
+        )
+        print(msg, file=sys.stderr)
         return data, 3
     run.advance(RunState.SANDBOX_RUN)
     results = []
@@ -269,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
             backend = get_backend(args.backend)
             if not backend.execution_supported:
                 raise BackendUnavailable(
-                    "InstaBox audit execution is not implemented; use doctor --backend instabox for read-only account checks"
+                    f"{backend.name.capitalize()} audit execution is not supported"
                 )
         with ExitStack() as stack:
             repo: Path | RemoteSource
