@@ -35,6 +35,13 @@ extending the same local Docker audit to public GitHub root URLs. GHA-001..GHA-0
 define approval-before-fetch, source/provenance, verdict and cleanup gates. This
 does not add cloud execution, dependency installation or remote model workflows.
 
+**Post-MVP amendment (2026-11-05):** the owner authorized one backend-foundation
+increment in at most twelve local commits, without pushing. BF-001..BF-008 in
+`instabox-backend.md` cover the shared Docker adapter, environment-only BYO key
+configuration and selected read-only InstaBox preflight. VM creation/deletion,
+source transfer, cloud target execution and recovery remain deferred. Docker's
+execution and evidence policy are unchanged.
+
 `PASS` means the exact listed offline commands passed under recorded run conditions. `FAIL` means at least one permitted check returned a nonzero error with sufficient observation. `INCONCLUSIVE` means missing setup steps, environment failure, timeout, skipped check, model uncertainty or unsuitable oracle. `BLOCKED` is a policy gate before execution. No "repository reproducible" universal claim from one smoke command.
 
 ## Submission gate

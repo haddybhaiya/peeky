@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from peeky import cli, runner
+from peeky import runner
+from peeky.backends.base import BackendReadiness
+from peeky.backends.docker import DockerBackend
 from peeky.cli import main
 from peeky.images import DEFAULT_IMAGE
 from peeky.models import Step, StepResult
@@ -121,13 +123,15 @@ def test_url_timeout_is_not_a_target_failure(
     git(repo, "add", "smoke.py")
     git(repo, "commit", "-qm", "URL timeout fixture")
 
+    original_execute = runner.execute
+
     def shorter_deadline(
         step: Step, source: SourceSnapshot, image: str, timeout: float
     ) -> StepResult:
         # Exercise the real runner with a lower permitted deadline, not a fake outcome.
-        return runner.execute(step, source, image, timeout=0.5)
+        return original_execute(step, source, image, timeout=0.5)
 
-    monkeypatch.setattr(cli, "execute", shorter_deadline)
+    monkeypatch.setattr(runner, "execute", shorter_deadline)
     output = tmp_path / "timeout"
     assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
     record = load_record(next(output.glob("*.json")))
@@ -172,7 +176,13 @@ def test_url_daemon_loss_after_preflight_cannot_run_on_host(
     output = tmp_path / "daemon-loss"
     with monkeypatch.context() as changed:
         # Preflight succeeds, but the real runner subsequently sees an unreachable daemon.
-        changed.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": True, "linux": True})
+        changed.setattr(
+            DockerBackend,
+            "doctor",
+            lambda self, **kwargs: BackendReadiness(
+                "docker", True, True, "DOCKER_AVAILABLE", "Available"
+            ),
+        )
         changed.delenv("DOCKER_CONTEXT", raising=False)
         changed.setenv("DOCKER_HOST", "tcp://127.0.0.1:1")
         assert main(["audit", URL, "--approve", "--output", str(output)]) == 3

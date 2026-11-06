@@ -34,6 +34,15 @@ restrictions as local audits, and save authenticated URL/commit provenance after
 temporary sources are cleaned up. They do not install dependencies or create a
 cloud sandbox. URL passports and model-repair commands remain unsupported.
 
+## BYO InstaBox account checks
+
+The backend foundation adds `peeky doctor --backend instabox --json` for read-only
+authentication, template and machine-quota checks using `INSTABOX_API_KEY` from
+your environment. It creates no cloud resources. Docker remains the default and
+only audit executor; `--backend instabox` on an audit reports that execution is
+not implemented. A successful account check still reports `ready: false`.
+See [configuration, result semantics and limits](docs/instabox-backend.md).
+
 ## BYOK Gemma README repair
 
 Bring your own Google AI Studio key using the ignored `.env` and the settings in `.env.example`. The selected checkpoint is `gemma-4-31b-it`, an open-weight instruction-tuned Gemma model with coding capabilities. It is used through Google's OpenAI-compatible endpoint, with no proprietary Gemini fallback. Deterministic tests need no key. Set `PEEKY_MODEL_CONSENT=true` only after reviewing the bounded redacted disclosure.
@@ -95,8 +104,8 @@ The [repository analysis](docs/repository-analysis.md) records the current imple
 ## CLI contracts
 
 - `peeky inspect PATH_OR_GITHUB_URL [--ref REF] [--json]`: capture committed source and extract **opted-in** fenced `bash peeky` commands as a proposal; never run them. `--ref` selects a GitHub branch/tag/full SHA and is URL-only. JSON contains `source`, `policy_sha256`, `run` and `steps`, plus `remote` for URL inputs.
-- `peeky doctor [--json]`: check whether Docker CLI/daemon is available; never install Docker.
-- `peeky audit PATH_OR_GITHUB_URL --approve [--ref REF] [--image IMAGE] [--output DIR]`: execute exactly one permitted smoke command in local Docker. `--ref` is URL-only; omission resolves the default branch once. Approval is checked before fetching. Default image is the reviewed immutable digest in `src/peeky/images.py`; mutable tags and unreviewed digests are blocked. Returns 0 for PASS, 1 for observed target FAIL, 2 for a pre-execution policy/no-op block, and 3 for unavailable/ambiguous infrastructure. Fetch failures return 3 without inventing source evidence.
+- `peeky doctor [--backend docker|instabox] [--json]`: check the selected backend; Docker is the default and is never installed automatically. InstaBox performs read-only account preflight and cannot yet execute audits; see the backend guide for exit semantics.
+- `peeky audit PATH_OR_GITHUB_URL --approve [--backend docker|instabox] [--ref REF] [--image IMAGE] [--output DIR]`: execute exactly one permitted smoke command in local Docker (default backend). InstaBox selection currently returns 3 before credentials or acquisition, after the approval gate. `--ref` is URL-only; omission resolves the default branch once. Approval is checked before fetching. Default image is the reviewed immutable digest in `src/peeky/images.py`; mutable tags and unreviewed digests are blocked. Returns 0 for PASS, 1 for observed target FAIL, 2 for a pre-execution policy/no-op block, and 3 for unavailable/ambiguous infrastructure. Fetch failures return 3 without inventing source evidence.
 - `peeky passport PATH --evidence FILE [--output FILE]`: generate **unmerged** candidate `AGENTS.generated.md` only from controller-authenticated schema 1.2 evidence bound to the current clean commit, source, policy and finalized plan. Legacy schemas are rejected; rerun the audit. Local HMAC integrity is not a public signature or independent third-party execution attestation.
 
 See [source capture and identity](docs/source-capture.md) for path rules, limits, CRLF handling and unsupported Git worktrees/filters. Git metadata is read on the host through trusted Git plumbing; target scripts, imports and hooks are never run there.

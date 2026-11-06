@@ -43,8 +43,8 @@ def test_T001_T002_inspect_never_executes_target(
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Inspect attempted target execution or Docker readiness check")
 
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
-    monkeypatch.setattr("peeky.cli.doctor", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
+    monkeypatch.setattr("peeky.backends.docker.DockerBackend.doctor", forbidden)
     assert main(["inspect", str(repo), "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["steps"][0]["command"] == "python smoke.py"
 
@@ -56,7 +56,7 @@ def test_T006_no_approval_never_reads_or_executes_source(
         pytest.fail("Approval gate attempted source capture or execution")
 
     monkeypatch.setattr("peeky.cli.snapshot", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     assert main(["audit", "nonexistent-target"]) == 2
 
 
@@ -71,7 +71,7 @@ def test_T007_missing_docker_records_blocked_without_host_fallback(
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Missing Docker triggered target execution")
 
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     output = tmp_path / "blocked-evidence"
     assert main(["audit", str(repo), "--approve", "--output", str(output)]) == 3
     assert "refusing host execution" in capsys.readouterr().err
@@ -95,8 +95,8 @@ def test_T004_rejected_command_never_reaches_docker(
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Unsafe command reached Docker")
 
-    monkeypatch.setattr("peeky.cli.doctor", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.backends.docker.DockerBackend.doctor", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     assert main(["audit", str(repo), "--approve"]) == 2
 
 
@@ -121,7 +121,7 @@ def test_unsupported_remote_inputs_never_fetch_or_execute(
 
     monkeypatch.setattr("peeky.github._run_git", forbidden)
     monkeypatch.setattr("peeky.cli.snapshot", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     assert main(arguments) == 3
     output = capsys.readouterr()
     assert message in output.err and output.out == ""
@@ -133,7 +133,7 @@ def test_url_audit_without_approval_never_fetches(monkeypatch: pytest.MonkeyPatc
 
     monkeypatch.setattr("peeky.github._run_git", forbidden)
     monkeypatch.setattr("peeky.cli.snapshot", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     assert main(["audit", "https://github.com/o/r", "--ref", "main"]) == 2
 
 
@@ -150,7 +150,7 @@ def test_url_audit_fetch_failure_does_not_invent_source_or_execute(
 
     monkeypatch.setattr("peeky.github._run_git", unavailable)
     monkeypatch.setattr("peeky.cli.snapshot", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     output = tmp_path / "no-captured-source"
     assert main(["audit", "https://github.com/o/r", "--approve", "--output", str(output)]) == 3
     assert "source unavailable" in capsys.readouterr().err

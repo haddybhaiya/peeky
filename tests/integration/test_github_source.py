@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from peeky import cli, github
+from peeky import cli, github, runner
+from peeky.backends.base import BackendReadiness
+from peeky.backends.docker import DockerBackend
 from peeky.cli import main
 from peeky.domain import DEFAULT_POLICY
 from peeky.images import DEFAULT_IMAGE
@@ -51,8 +53,8 @@ def test_cli_remote_json_is_a_plan_and_never_executes(
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Inspection reached Docker or target execution")
 
-    monkeypatch.setattr("peeky.cli.doctor", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.backends.docker.DockerBackend.doctor", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     expected = fingerprint(repo)
     assert main(["inspect", URL, "--ref", expected.git_commit, "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
@@ -252,8 +254,8 @@ def test_url_audit_policy_blocks_preserve_authenticated_origin_without_execution
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Policy-denied URL audit reached Docker")
 
-    monkeypatch.setattr("peeky.cli.doctor", forbidden)
-    monkeypatch.setattr("peeky.cli.execute", forbidden)
+    monkeypatch.setattr("peeky.backends.docker.DockerBackend.doctor", forbidden)
+    monkeypatch.setattr("peeky.runner.execute", forbidden)
     output = tmp_path / "blocked-url"
     assert main(["audit", URL, "--approve", "--image", image, "--output", str(output)]) == 2
     record = load_record(next(output.glob("*.json")))
@@ -268,12 +270,18 @@ def test_url_audit_missing_docker_retains_bound_evidence_after_source_cleanup(
     repo: Path, local_transport: list[Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     expected = fingerprint(repo)
-    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    monkeypatch.setattr(
+        DockerBackend,
+        "doctor",
+        lambda self, **kwargs: BackendReadiness(
+            "docker", False, True, "DOCKER_UNAVAILABLE", "Unavailable"
+        ),
+    )
 
     def forbidden(*args: object, **kwargs: object) -> None:
         pytest.fail("Missing Docker reached target execution")
 
-    monkeypatch.setattr(cli, "execute", forbidden)
+    monkeypatch.setattr(runner, "execute", forbidden)
     output = tmp_path / "missing-docker"
     assert (
         main(["audit", URL, "--ref", expected.git_commit, "--approve", "--output", str(output)])
@@ -292,7 +300,13 @@ def test_url_audit_execution_error_or_interrupt_cleans_source(
     local_transport: list[Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interrupt: bool
 ) -> None:
     paths: list[Path] = []
-    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": True, "linux": True})
+    monkeypatch.setattr(
+        DockerBackend,
+        "doctor",
+        lambda self, **kwargs: BackendReadiness(
+            "docker", True, True, "DOCKER_AVAILABLE", "Available"
+        ),
+    )
 
     def interrupted(*args: object, **kwargs: object) -> None:
         captured = args[1]
@@ -303,7 +317,7 @@ def test_url_audit_execution_error_or_interrupt_cleans_source(
             raise KeyboardInterrupt
         raise OSError("synthetic controller failure")
 
-    monkeypatch.setattr(cli, "execute", interrupted)
+    monkeypatch.setattr(runner, "execute", interrupted)
     output = tmp_path / "interrupted"
     if interrupt:
         with pytest.raises(KeyboardInterrupt):
@@ -326,7 +340,13 @@ def test_url_audit_does_not_publish_before_source_cleanup_completes(
         raise OSError("source cleanup could not be confirmed")
 
     monkeypatch.setattr(cli, "github_snapshot", cleanup_failure)
-    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    monkeypatch.setattr(
+        DockerBackend,
+        "doctor",
+        lambda self, **kwargs: BackendReadiness(
+            "docker", False, True, "DOCKER_UNAVAILABLE", "Unavailable"
+        ),
+    )
     output = tmp_path / "unconfirmed-cleanup"
     assert main(["audit", URL, "--approve", "--output", str(output)]) == 3
     assert all(not path.exists() for path in local_transport)
@@ -345,7 +365,13 @@ def test_url_audit_named_selections_and_dot_git_share_canonical_evidence(
     expected = fingerprint(repo)
     git(repo, "branch", "topic")
     git(repo, "tag", "-a", "v1", "-m", "annotated audit selection fixture")
-    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    monkeypatch.setattr(
+        DockerBackend,
+        "doctor",
+        lambda self, **kwargs: BackendReadiness(
+            "docker", False, True, "DOCKER_UNAVAILABLE", "Unavailable"
+        ),
+    )
     output = tmp_path / "named-selection"
     assert main(["audit", URL + ".git", "--ref", ref, "--approve", "--output", str(output)]) == 3
     record = load_record(next(output.glob("*.json")))
@@ -374,7 +400,13 @@ def test_real_git_redacted_ref_blocked_audit_exports(
         if selector == "default":
             git(repo, "symbolic-ref", "HEAD", "refs/heads/" + ref)
     ref_args = [] if selector == "default" else ["--ref", ref]
-    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    monkeypatch.setattr(
+        DockerBackend,
+        "doctor",
+        lambda self, **kwargs: BackendReadiness(
+            "docker", False, True, "DOCKER_UNAVAILABLE", "Unavailable"
+        ),
+    )
     output = tmp_path / "redacted-ref-audit"
     assert main(["audit", URL, *ref_args, "--approve", "--output", str(output)]) == 3
     artifact = next(output.glob("*.json"))
@@ -400,7 +432,13 @@ def test_real_git_fully_masked_selector_exports_after_secret_is_removed(
 ) -> None:
     ref = "refs/heads/confidential-name"
     git(repo, "branch", "confidential-name")
-    monkeypatch.setattr(cli, "doctor", lambda **kwargs: {"docker_daemon": False, "linux": False})
+    monkeypatch.setattr(
+        DockerBackend,
+        "doctor",
+        lambda self, **kwargs: BackendReadiness(
+            "docker", False, True, "DOCKER_UNAVAILABLE", "Unavailable"
+        ),
+    )
     output = tmp_path / "masked-selector"
     with monkeypatch.context() as configured:
         configured.setenv("PEEKY_TEST_API_KEY", ref)

@@ -546,3 +546,110 @@ exact identity. Existing local HMAC/host trust, redaction completeness and URL
 workflow limits remain unchanged. **Gate / next task:** local GHA-006 review gate
 PASSED; publish the four commits and observe fresh PR CI. Remote success is pending
 at this local checkpoint and is not inferred from earlier runs.
+
+## 2026-11-05 — BYO InstaBox backend foundation (local only)
+
+**Authorization/base:** the owner authorized one backend-foundation increment in
+at most twelve commits, explicitly requesting commits without a push. Work starts
+from merged PR #9 at main `75ec856a0a3ca1abe87fa6c5cfbcfc8a38480c15` on
+`feat/instabox-backend-foundation`. All new commits use author/committer
+`haddybhaiya <harshsharma2k614@gmail.com>` and
+`Co-authored-by: Codex <codex@openai.com>`.
+
+**Changed:** shared backend protocol and structured preflight observations; thin
+Docker adapter preserves the existing runner's arguments, policies and schema 1.2
+evidence. Audit/doctor accept an explicit backend, defaulting to Docker. The BYO
+InstaBox client reads environment-only configuration and permits only fixed-origin
+identity/template/usage GETs. It refuses redirects/retries and provider mutations,
+bounds metadata/socket reads, strictly parses JSON and emits safe diagnostics.
+API-key repr/output are suppressed, with key-format redaction independent of env.
+
+The selected cloud doctor checks authentication, activation gates, an offered
+x86_64 template and reported machine quota. Zero/unlimited limits are interpreted
+conservatively. Because `/v1/me` does not expose key scopes, create/delete rights,
+template-plan access and provider capacity remain explicitly unverified. Preflight
+success never sets cloud `ready`: execution remains unsupported. Selected cloud
+audits fail before credentials, source fetching, Docker and evidence, after the
+existing approval gate. No implicit executor fallback is possible.
+
+**Tested (Linux/Python 3.12.14, locked tools and reviewed cached Python digest):**
+
+| Completed check | Observed result |
+|---|---|
+| Baseline core before edits | 322 passed, 29 Docker cases deselected |
+| Initial core gate after CLI integration | 374 passed, 29 Docker cases deselected |
+| Final `.venv/bin/pytest -m 'not live' -q` | **425 passed, 1 live deselected, 0 skips in 65.60s**; all 29 real Docker cases included; `.peeky/instabox-foundation/full.log` |
+| `.venv/bin/ruff check .` / `ruff format --check .` | Passed; 62 Python files formatted |
+| `.venv/bin/mypy src tests` | Passed; 57 source/test files |
+| `.venv/bin/python scripts/check_docs.py` / `git diff --check` | Passed; 21 required files and no whitespace errors |
+| `UV_CACHE_DIR=/workspace/.cache/uv uv build --wheel --offline` | Built the wheel without fetching dependencies |
+| `.venv/bin/python scripts/smoke_wheel.py` | Passed isolated offline install/module/console/inspect, backend help/registry, missing-key cloud doctor and disabled cloud audit |
+| `scripts/validate_phase2.py --output .peeky/instabox-foundation/fixtures` | Actual Docker good PASS, bad FAIL, no-opt-in INCONCLUSIVE; all records authenticated; isolated controller state under the ignored validation directory |
+
+The tests added 74 deterministic cases covering adapter delegation, safe selected
+CLI behavior, exact GET/header allowlists, redirects, closure on response/error,
+timeout and response budgets, malformed/duplicate JSON, HTTP status mapping,
+activation/templates/limits and secret suppression. Early tests exposed one old
+CLI mock seam after the adapter refactor; mocks now patch the adapter or underlying
+runner, without relaxing outcome/isolation/cleanup assertions. Formatting of the
+installed smoke was corrected before its successful lint/package gate.
+
+Provider contracts were checked against official API/account/key documentation
+and OpenAPI on 2026-11-05; references are in `instabox-backend.md`. Metadata and
+transport failures are injected, not represented as live account results. No
+InstaBox key was supplied, no live account preflight ran, no VM was provisioned or
+deleted, and no model call or new public GitHub target execution was performed.
+
+**Docs updated:** backend guide/BF-001..BF-008, CLI README, architecture, scope
+amendment, runner/security boundary, acceptance/test mappings, assumptions A-31/32,
+ADR-018, phase tracker, this ledger and the public manifest (103 tracked-file
+hashes). The wheel's 26 source modules and embedded README match the checkout.
+
+**Known limits:** only Docker executes audits. Cloud lifecycle, source transfer,
+owned cleanup/expiry, cloud evidence and orphan recovery are pending. A read
+preflight is not a provisioning guarantee. The five-second deadline is checked
+between reads and can overshoot during blocking I/O; trusted operator proxy/CA
+settings remain part of the credential boundary. New behavior was checked on
+Linux only. No CI result or live provider authentication is inferred.
+
+**Gate / next task:** local BF-001..BF-008, existing deterministic Docker,
+fixture/package/docs gates PASSED. Keep this increment local as requested: no
+push and no remote PR creation. The next implementation increment would add the
+reviewed cloud lifecycle and audit execution, followed by recovery/reconciliation.
+
+## 2026-11-05 — PR #10 HTTP-error body review (one commit)
+
+**Authorization/base:** after authorizing publication of the eight-commit
+foundation as PR #10, the owner authorized one fix commit and push from
+`1283452cc71be295aab436a763638c5d49ebd152`. Preserve the owner author/committer and
+Codex co-author trailer. The earlier local-only checkpoint above is historical.
+
+**Cause/changed:** production transport read error bodies before mapping their
+already-known HTTP status. Controlled 401/403/429 responses reproduced oversized
+bodies yielding RESPONSE_LIMIT and stalled bodies yielding REQUEST_TIMEOUT, both
+without `http_status`. Non-200 responses now close immediately without body reads
+and preserve their status for existing safe diagnosis. Successful metadata reads
+retain the same size/deadline/JSON checks. Redirect, credential and retry policy
+are unchanged.
+
+**Tested:** a new regression first failed against the old transport with
+RESPONSE_LIMIT instead of AUTHENTICATION_FAILED. After the fix, all 81 focused
+API/transport/backend/CLI tests passed. Twelve new combinations exercise
+401/403/429, oversized/stalled bodies and both direct responses and raised HTTP
+errors, checking exact mapped reason/status, response closure, zero body reads,
+one request and no key disclosure. Full `.venv/bin/pytest -q`: **408 passed,
+30 deselected (29 Docker + 1 live), 0 skips in 13.24s**; log retained at
+`.peeky/instabox-review/core.log`. Ruff lint/format (62 files), strict mypy (57
+files), required docs (21), whitespace, offline wheel build and isolated
+installed-wheel smoke passed. The test response override's type annotation was
+corrected to match BytesIO before the successful type gate.
+
+**Docs updated:** backend response semantics, BF-007 phase checkpoint, A-33,
+ADR-018 correction, this ledger and the 103-file public manifest. Packaged source
+modules/README and manifest hashes were verified against the checkout.
+
+**Known limits / gate / next task:** local BF-007 review gate PASSED. Provider
+responses are simulated through the production transport; no live account/model
+request or VM operation occurred. Docker execution policy is unchanged; Docker
+tests were not repeated for this account-transport-only fix. Push the one commit
+to the existing PR as authorized and observe fresh CI; no new CI success is claimed.

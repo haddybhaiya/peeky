@@ -1,0 +1,157 @@
+"""Read-only InstaBox preflight. Provisioning and cloud execution are deferred."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from ..models import Step, StepResult
+from ..sources import SourceSnapshot
+from .base import BackendReadiness, BackendUnavailable
+from .instabox_api import InstaboxClient, InstaboxConfig, InstaboxError, MetadataTransport
+
+
+def _require(condition: bool) -> None:
+    if not condition:
+        raise InstaboxError(
+            "INVALID_RESPONSE", "InstaBox returned incomplete or invalid account metadata"
+        )
+
+
+def _count(value: object) -> int:
+    if type(value) is not int or value < 0:
+        raise InstaboxError("INVALID_RESPONSE", "InstaBox returned invalid account counts")
+    return value
+
+
+def _template_available(data: dict[str, Any], template_id: str) -> bool:
+    templates = data.get("templates")
+    _require(isinstance(templates, list))
+    if not isinstance(templates, list):
+        return False
+    for item in templates:
+        _require(isinstance(item, dict))
+        if not isinstance(item, dict) or item.get("id") != template_id:
+            continue
+        creatable = item.get("creatable")
+        hidden = item.get("hidden")
+        if creatable is not None:
+            _require(type(creatable) is bool)
+        if hidden is not None:
+            _require(type(hidden) is bool)
+        # Official older servers use !hidden; absence of both is unknown.
+        offered = (
+            creatable if creatable is not None else (not hidden if type(hidden) is bool else False)
+        )
+        if offered and hidden is not True and item.get("arch") == "x86_64":
+            return True
+    return False
+
+
+class InstaboxBackend:
+    name = "instabox"
+    execution_supported = False
+
+    def __init__(
+        self, config: InstaboxConfig | None = None, transport: MetadataTransport | None = None
+    ) -> None:
+        self._config = config
+        self._transport = transport
+
+    def doctor(self, avoid: Path | None = None) -> BackendReadiness:
+        checks = {
+            "configuration": "not_checked",
+            "authentication": "not_checked",
+            "account_activation": "not_checked",
+            "template_catalog": "not_checked",
+            "machine_quota": "not_checked",
+            "create_delete_permissions": "not_verified",
+            "template_plan_access": "not_verified",
+            "provider_capacity": "not_verified",
+            "execution": "not_implemented",
+        }
+        details: dict[str, object] = {"read_only": True}
+
+        def result(ok: bool, reason: str, message: str) -> BackendReadiness:
+            return BackendReadiness(self.name, ok, False, reason, message, checks, details)
+
+        try:
+            config = self._config if self._config is not None else InstaboxConfig.from_environment()
+            config.validate()
+            checks["configuration"] = "passed"
+            details["template_id"] = config.template_id
+            client = (
+                InstaboxClient(config)
+                if self._transport is None
+                else InstaboxClient(config, self._transport)
+            )
+            account = client.get("/v1/me")
+            _require(type(account.get("userId")) is int and account["userId"] > 0)
+            _require(isinstance(account.get("login"), str) and bool(account["login"]))
+            checks["authentication"] = "passed"
+            details["account_id"] = account["userId"]
+            for field in ("inviteRequired", "activated"):
+                if field in account:
+                    _require(type(account[field]) is bool)
+            if account.get("inviteRequired") is True and account.get("activated") is not True:
+                checks["account_activation"] = "failed"
+                return result(
+                    False, "INVITE_REQUIRED", "Activate this InstaBox account in the dashboard"
+                )
+            checks["account_activation"] = (
+                "passed" if account.get("activated") is True else "not_reported"
+            )
+            if not _template_available(client.get("/v1/templates"), config.template_id):
+                checks["template_catalog"] = "failed"
+                return result(
+                    False,
+                    "TEMPLATE_UNAVAILABLE",
+                    "The selected x86_64 template is not offered in the current catalog",
+                )
+            checks["template_catalog"] = "passed"
+            usage = client.get("/v1/usage")
+            machines = _count(usage.get("machines"))
+            limits = usage.get("limits")
+            _require(isinstance(limits, dict))
+            if not isinstance(limits, dict):
+                return result(False, "INVALID_RESPONSE", "InstaBox did not report account limits")
+            maximum = _count(limits.get("maxMachines"))
+            unlimited = limits.get("unlimited")
+            _require(
+                unlimited is None
+                or (isinstance(unlimited, list) and all(type(v) is str for v in unlimited))
+            )
+            details.update(machines=machines, max_machines=maximum)
+            if maximum == 0 and unlimited is None:
+                checks["machine_quota"] = "unknown"
+                return result(
+                    False, "LIMIT_UNKNOWN", "The provider did not disambiguate a zero machine limit"
+                )
+            no_limit = maximum == 0 and isinstance(unlimited, list) and "maxMachines" in unlimited
+            details["machine_limit_unlimited"] = no_limit
+            if not no_limit and machines >= maximum:
+                checks["machine_quota"] = "failed"
+                return result(
+                    False,
+                    "MACHINE_LIMIT_REACHED",
+                    "No machine slot is available in this account; review it in the dashboard",
+                )
+            checks["machine_quota"] = "passed"
+            return result(
+                True,
+                "PREFLIGHT_OK",
+                "Read-only account checks passed; cloud audit execution is not implemented",
+            )
+        except InstaboxError as error:
+            if checks["configuration"] != "passed":
+                checks["configuration"] = "failed"
+            elif error.code == "AUTHENTICATION_FAILED":
+                checks["authentication"] = "failed"
+            if error.http_status is not None:
+                details["http_status"] = error.http_status
+            return result(False, error.code, str(error))
+
+    def execute(self, step: Step, source: SourceSnapshot, image: str, timeout: float) -> StepResult:
+        raise BackendUnavailable(
+            "InstaBox audit execution is not implemented; use doctor --backend instabox for read-only account checks"
+        )

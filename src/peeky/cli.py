@@ -10,6 +10,8 @@ from dataclasses import asdict
 from pathlib import Path
 
 from . import __version__
+from .backends import get_backend
+from .backends.base import BackendUnavailable, SandboxBackend
 from .domain import DEFAULT_POLICY, RunRecord, RunState
 from .evidence import report, write_report
 from .github import RemoteSource, github_snapshot
@@ -17,7 +19,6 @@ from .images import DEFAULT_IMAGE
 from .parser import ParseError, read_steps
 from .passport import PassportError, make_passport
 from .policy import PolicyError, safe_argv, validate_run_image
-from .runner import doctor, execute
 from .sources import SourceError, SourceSnapshot, safe_root, snapshot
 
 
@@ -31,9 +32,11 @@ def build_parser() -> argparse.ArgumentParser:
     inspect.add_argument("--json", action="store_true")
     check = commands.add_parser("doctor", help="Check Docker readiness")
     check.add_argument("--json", action="store_true")
+    check.add_argument("--backend", choices=("docker", "instabox"), default="docker")
     audit = commands.add_parser("audit", help="Run approved smoke steps inside Docker")
     audit.add_argument("repo", help="Local Git directory or public GitHub repository URL")
     audit.add_argument("--ref", help="GitHub branch, tag or full commit SHA (URL inputs only)")
+    audit.add_argument("--backend", choices=("docker", "instabox"), default="docker")
     audit.add_argument(
         "--approve", action="store_true", help="Acknowledge listed commands may execute"
     )
@@ -111,7 +114,7 @@ def _print_inspection(captured: SourceSnapshot, remote: RemoteSource | None, as_
 
 
 def _audit_source(
-    captured: SourceSnapshot, repo: Path | RemoteSource, image: str
+    captured: SourceSnapshot, repo: Path | RemoteSource, image: str, backend: SandboxBackend
 ) -> tuple[dict[str, object], int]:
     """Observe the audit; finalize its record only after source contexts close."""
     steps = read_steps(captured.path)
@@ -135,8 +138,8 @@ def _audit_source(
         print(f"No execution: {reason}", file=sys.stderr)
         return data, 2
     run.advance(RunState.APPROVED)
-    readiness = doctor(avoid=captured._origin)
-    if not readiness["docker_daemon"] or not readiness.get("linux"):
+    readiness = backend.doctor(avoid=captured._origin)
+    if not readiness.ready:
         run.advance(RunState.BLOCKED)
         data = report(repo, image, steps, [], captured.identity, run, DEFAULT_POLICY)
         data["reason"] = "Docker daemon unavailable; no target execution"
@@ -146,7 +149,9 @@ def _audit_source(
     results = []
     for step in steps:
         captured.verify()
-        result = execute(step, captured, image, timeout=DEFAULT_POLICY.command_timeout_seconds)
+        result = backend.execute(
+            step, captured, image, timeout=DEFAULT_POLICY.command_timeout_seconds
+        )
         results.append(result)
         print(f"{step.id}: {result.outcome}")
         if result.outcome != "PASS":
@@ -232,9 +237,17 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0 if data["status"] in {"PROPOSED", "VERIFIED"} else 3
         if args.command == "doctor":
-            status = doctor()
-            print(json.dumps(status, sort_keys=True) if args.json else f"Docker: {status}")
-            return 0 if status["docker_daemon"] and status.get("linux") else 3
+            selected = get_backend(args.backend)
+            readiness = selected.doctor()
+            if selected.name == "docker":
+                status = readiness.details
+                print(json.dumps(status, sort_keys=True) if args.json else f"Docker: {status}")
+            elif args.json:
+                print(json.dumps(readiness.to_dict(), sort_keys=True))
+            else:
+                print(f"InstaBox: {readiness.reason}")
+                print(readiness.message)
+            return 0 if readiness.preflight_ok else 3
         if args.command == "passport":
             if args.output.name != "AGENTS.generated.md":
                 raise PassportError("Passport output must be AGENTS.generated.md; never AGENTS.md")
@@ -245,6 +258,7 @@ def main(argv: list[str] | None = None) -> int:
                 output.write(contents)
             print(args.output)
             return 0
+        backend: SandboxBackend | None = None
         if args.command == "audit":
             if not args.approve:
                 print(
@@ -252,6 +266,11 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
+            backend = get_backend(args.backend)
+            if not backend.execution_supported:
+                raise BackendUnavailable(
+                    "InstaBox audit execution is not implemented; use doctor --backend instabox for read-only account checks"
+                )
         with ExitStack() as stack:
             repo: Path | RemoteSource
             if _remote_input(args.repo):
@@ -269,7 +288,8 @@ def main(argv: list[str] | None = None) -> int:
                 return _print_inspection(
                     captured, repo if isinstance(repo, RemoteSource) else None, args.json
                 )
-            data, code = _audit_source(captured, repo, args.image)
+            assert backend is not None
+            data, code = _audit_source(captured, repo, args.image, backend)
         # No record is published until temporary Git storage and exports close.
         path = write_report(data, args.output)
         print(f"Evidence: {path}")

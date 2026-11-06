@@ -28,11 +28,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "0e03a28c793a7301a2511dc639366ee32587aa2f84876e90d8a34b18b4c88cc8"
+      "sha256": "1cfca355287d9dc0a59e4dd0c70d8fbcc7661229d9502f35b9775896b319df79"
     },
     {
       "path": "SECURITY.md",
-      "sha256": "fa5d9e61d9ba336a1613a0bfe8dbc5382b84bf98561a54576df514d64da2c15b"
+      "sha256": "b65d001fab66f3103cd6348b52e5c24f91f81ad70efbd1231486f55de0044255"
     },
     {
       "path": "docs/agent-benchmark.md",
@@ -40,15 +40,15 @@
     },
     {
       "path": "docs/architecture.md",
-      "sha256": "61a3587899ecfa3d92b980cc22c03ef20401caf486008af18e810df235046bc2"
+      "sha256": "9a0d9519bbc26ed76743a84e42e16217d65dfffba9565f255b86d9eaeedfa566"
     },
     {
       "path": "docs/assumptions.md",
-      "sha256": "904b7f8890c755d20360f592754b81f023320f2e2427b85971ac073ebdc67c16"
+      "sha256": "c1528ef1a41aad10a4557d43e23ad10d45326ba35ea8524e388f75ae84cc0d4d"
     },
     {
       "path": "docs/decisions.md",
-      "sha256": "e270abaa5dd57e6c2ea8b76d80355b9f8dcc65230d4af64470657cb93ad574ef"
+      "sha256": "840999f1a478e38811d6c9d0b9821d253189d023a61dd45db4fd9ef0c9171472"
     },
     {
       "path": "docs/demo-plan.md",
@@ -67,12 +67,16 @@
       "sha256": "281665abd93fa72d26167e33f8dccaef548551a88af01a2cb893417e431a06c2"
     },
     {
+      "path": "docs/instabox-backend.md",
+      "sha256": "54bd4f9db1ab59ef8c89ecebf8c997fd8361a97847664ea1abcedc1e25251979"
+    },
+    {
       "path": "docs/invariants.md",
       "sha256": "48bba066edc1cc7410b0da187d7f182a3ede2dcdb38999078651964a280a9009"
     },
     {
       "path": "docs/mvp-contract.md",
-      "sha256": "16926f906cfae5e045a61a95e60f2ed1b6ef4ebdf4219420314146c05e1e1a3c"
+      "sha256": "2581a49a67c6ef652519a6a354c610a49aa9dc2ab606aa7eed9f737fffd9b895"
     },
     {
       "path": "docs/open-models.md",
@@ -80,7 +84,7 @@
     },
     {
       "path": "docs/phase.md",
-      "sha256": "fc5d4d6c5151fdf5ef339a10f8a71fb2a60dfebbb806cd4b57dc6d07aca825bb"
+      "sha256": "af901a8f450219098c9d1ebd757074fd3cf5a0314f97658fa2930a110c94d0a5"
     },
     {
       "path": "docs/phase2-runner.md",
@@ -108,7 +112,7 @@
     },
     {
       "path": "docs/requirements-traceability.md",
-      "sha256": "46751d2cb43c522977abdad2849300540b1332d8bc83fe7b134461b1a30d5c18"
+      "sha256": "e08ed52ef88171484ffb9ccdd3aa0aba4e70206b864462994a7ff5dd086c474c"
     },
     {
       "path": "docs/research.md",
@@ -116,7 +120,7 @@
     },
     {
       "path": "docs/runner-security.md",
-      "sha256": "333d7e5bc2aaaa42a6502302bc1a59f375e2568c20e0665485e85d6b5b3b4190"
+      "sha256": "04ea997cd005d28c0e1181dff78864bdfe02eae49b4d22debc6635d9a9accd84"
     },
     {
       "path": "docs/source-capture.md",
@@ -124,7 +128,7 @@
     },
     {
       "path": "docs/test-plan.md",
-      "sha256": "f47480118ad9d538b2a0b15444637924685477197b4365c692e68314a41429d1"
+      "sha256": "9121e9c4365a75faace96e0824bd6113a4de2aabe6ee983fd18a68035607f3c9"
     },
     {
       "path": "docs/threat-model.md",
@@ -132,7 +136,7 @@
     },
     {
       "path": "docs/work_review.md",
-      "sha256": "8bf52c597148deb89521e080be7fed487649384879795cc4a68027ad211ed5fd"
+      "sha256": "115a98233572dd26ebe81bf601c6b5fef5589ca4b39fc81be9f63eb598bf9745"
     },
     {
       "path": "peeky.example.toml",
@@ -144,11 +148,11 @@
     },
     {
       "path": "scripts/check_docs.py",
-      "sha256": "c7976d4aae2561964772b1e66f723896e84a55b4b46641905aaad4ae33bc8456"
+      "sha256": "054584162484cf09d6e2ddc37c3cb014eb41b4ccf34f0f6bb8925b4aa8cc644c"
     },
     {
       "path": "scripts/smoke_wheel.py",
-      "sha256": "87c01642b5221f7f5c25da5af8afc545a85e9923c144112d785f84fd3a6578ea"
+      "sha256": "cff9d8e54ee6443a77cca2f9d2923bc746537200d08311062c87429d02c9315e"
     },
     {
       "path": "scripts/validate_phase2.py",
@@ -171,12 +175,32 @@
       "sha256": "307299fda7b77d22c64cb51430ec75e5f59d78e9c948786afb3b2544fe45e4b7"
     },
     {
+      "path": "src/peeky/backends/__init__.py",
+      "sha256": "a16b83cf60db790c7aebd10d4bf1a969d5b505e560649f6c6e2a95491f760fdf"
+    },
+    {
+      "path": "src/peeky/backends/base.py",
+      "sha256": "fbe4fb4b400af67a1dda359030134225a37e2e0f73183e5b6196eb6a8928bed7"
+    },
+    {
+      "path": "src/peeky/backends/docker.py",
+      "sha256": "1557e43eb6cb9caa5b5abb0461ec6d483666ed403bc85454e414b221926c2c92"
+    },
+    {
+      "path": "src/peeky/backends/instabox.py",
+      "sha256": "9118d4dbcb73fb1051098b6b61545f8adba6a8419dd8124ad4a1b1f404c717ae"
+    },
+    {
+      "path": "src/peeky/backends/instabox_api.py",
+      "sha256": "4ec00e7cb34e170f3fc4b0670c856b147bb51d5480cfeb25379f6463da296a2b"
+    },
+    {
       "path": "src/peeky/benchmark.py",
       "sha256": "cc8a4cab04d22ac7fdd9f2001acbef00670ba8fd441522be53e89216857b8451"
     },
     {
       "path": "src/peeky/cli.py",
-      "sha256": "0438b4b92b6fa798824d2654853a7ec43ff26190236454eb8beb368936e29345"
+      "sha256": "72ee9926d60e11e3a49672702e2188f8da649d0bbbaf7f3d13a7eb1e892de439"
     },
     {
       "path": "src/peeky/domain.py",
@@ -228,7 +252,7 @@
     },
     {
       "path": "src/peeky/redaction.py",
-      "sha256": "f01f7d29ec59722a77415ba5bd95e46eec19b773375ef9afe5dfe9a2276821f6"
+      "sha256": "200f77cb992dcfdeae6bedfe1f5576e2babad504668a73295f6873b8a9febaca"
     },
     {
       "path": "src/peeky/repair.py",
@@ -284,11 +308,11 @@
     },
     {
       "path": "tests/integration/test_github_audit_docker.py",
-      "sha256": "4b65c21b576e121070513828a54daedeaa2ac8b8953e65984a911d1f87ead1d3"
+      "sha256": "17e0f9e6436f2a8f1d619f5af7b794de1df73a3dee041644d5be2755bfcdd20f"
     },
     {
       "path": "tests/integration/test_github_source.py",
-      "sha256": "f646a2dfbb031b21aded7e6806f3597763460c2985d95dbdd20ba54e468bd87e"
+      "sha256": "47334f4adc2a4674b4a41546e12e86bdb997431cbad9c52ecf131d463ef2acb0"
     },
     {
       "path": "tests/integration/test_repair_docker.py",
@@ -303,8 +327,16 @@
       "sha256": "b1209c7afeef03de01494bcad19647c156d88391890db437670ff9945b1f4e51"
     },
     {
+      "path": "tests/smoke/test_backend_cli.py",
+      "sha256": "36fc158854fd4e0b7395177a8603be6f583cdaf7a50104c50c97d1b755a4bd50"
+    },
+    {
       "path": "tests/smoke/test_cli.py",
-      "sha256": "f2248b95079312c27a4ced003d42535ecc28684ecb1404f090ffa53ad99a3dfc"
+      "sha256": "9f661bb023964bb5515f6c7013961e4939fca6a36120fc4563bc3b6f9b7f476c"
+    },
+    {
+      "path": "tests/unit/test_backends.py",
+      "sha256": "5469e92cf5294ddf59b4d7ef70c7bd79605d5a7ccde9bcd541818c139fc3106a"
     },
     {
       "path": "tests/unit/test_benchmark.py",
@@ -325,6 +357,18 @@
     {
       "path": "tests/unit/test_hosttools.py",
       "sha256": "6ee138be26453a105aab9850a64c3bd612dbbdf9fdd095b9c653c775e8d12ca8"
+    },
+    {
+      "path": "tests/unit/test_instabox_api.py",
+      "sha256": "ec794a4178e812eefa20ccb6ffe0119b22c482b3d31a04fbdd66b580fa0432ea"
+    },
+    {
+      "path": "tests/unit/test_instabox_backend.py",
+      "sha256": "6ad7d96c163f1fa99ff423937899736dfaf4066a4ec6f4bc68adb4b184127b3a"
+    },
+    {
+      "path": "tests/unit/test_instabox_transport.py",
+      "sha256": "01e282bfbbf21f259c5016bc8ae9271cf3ac8548772651ee04dab3ca3a24b0b2"
     },
     {
       "path": "tests/unit/test_parser.py",

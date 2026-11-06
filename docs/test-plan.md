@@ -85,6 +85,23 @@ Final Phase 4 deterministic gate: **201 passed, 1 live deselected, 0 skips in 24
 
 T-033 is covered by `tests/unit/test_reports.py`; T-034..T-036 use installed-wheel smoke, CI inspection, docs and manifest/package checks. T-037 requires the actual video; prepared captions/HTML are not a recording. Fresh good/bad/no-opt-in fixture audit evidence is retained under `.peeky/phase5-validation/fixtures`. Summary JSON/Markdown and private evidence archive are under that same root. Final observed gate counts are in work review. No model calls are part of Phase 5 validation.
 
-## Owner-confirmed delivery completion
+## Post-MVP backend foundation
+
+BF-001..BF-008 in `instabox-backend.md` cover the shared adapter, explicit
+environment-only configuration, credential-safe allowlisted GET transport,
+account/template/quota preflight and fail-closed cloud audit selection. New tests
+are in `test_backends.py`, `test_instabox_api.py`, `test_instabox_transport.py`,
+`test_instabox_backend.py` and `test_backend_cli.py`. Production transport tests
+exercise redirect refusal, response closure/budgets, socket/elapsed timeout paths
+and safe HTTP/I/O errors through an injected opener. These are deterministic
+provider-contract checks; live account access remains unverified.
+
+Run `pytest -m 'not live' -q` with Linux Docker and the pinned image for the full
+compatibility gate. Existing real container cases must continue to pass unchanged
+in their behavioral assertions. The installed-wheel smoke explicitly strips
+InstaBox settings and verifies packaged help, offline missing-key output and
+disabled cloud audits. No key, external account call or VM is needed by CI.
+
+## Owner-confirmed delivery completion (historical)
 
 The owner confirms the actual demo video and OpenFire submission are complete. T-037 delivery status is updated from pending recording to owner-reported completion; the controller has not independently checked final recording duration/content or a submission receipt. Existing local technical gate remains 204 passed, 1 live deselected, 0 skips. No new model run, Docker run, benchmark improvement, second-machine reproduction or remote CI result is inferred from this documentation update.

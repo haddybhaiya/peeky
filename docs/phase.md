@@ -123,3 +123,36 @@ for GHA-006 redacted-ref export. Stored masks are display labels while raw selec
 and captured identity remain validated. Unit, real Git and actual Docker branch/tag
 regressions cover export, secret suppression, unchanged outcomes and tamper denial.
 Exact final gate results are in the latest work-review entry; cloud scope is unchanged.
+
+## Post-MVP BYO InstaBox backend foundation — local increment (2026-11-05)
+
+PR #9 is merged; the owner authorized one backend-foundation increment from
+main `75ec856a0a3ca1abe87fa6c5cfbcfc8a38480c15` in at most twelve commits, with
+**no push**. Branch: `feat/instabox-backend-foundation`. BF-001..BF-008 in
+`instabox-backend.md` cover the shared backend interface/Docker adapter,
+environment-only configuration, read-only account preflight, credential safety,
+explicit unsupported execution and compatibility.
+
+Local gate PASSED: **425 passed, 1 live deselected, 0 skips in 65.60s**, including
+all 29 existing real Docker cases. Ruff lint/format, strict mypy (57 files), the
+21-file docs gate, offline wheel build and isolated installed-wheel smoke passed.
+The three-fixture validator independently retained authenticated PASS, FAIL and
+INCONCLUSIVE records. The work-review entry records commands and exact limits.
+
+Docker remains the default and only executor. InstaBox `doctor` may pass its
+read-only preflight but always reports execution unsupported and `ready: false`.
+No live InstaBox account check or VM operation was performed. Key scopes, template
+plan access and physical capacity remain unverified. No new CI result is claimed.
+This branch stays local as requested; no remote PR is opened. Next authorized
+implementation would require a separate cloud lifecycle/execution increment;
+source upload, owned VM creation/deletion/expiry and cloud evidence remain pending.
+
+PR #10 publication/review update (2026-11-05): the owner subsequently authorized
+the push and PR creation, then one additional fix commit and push for BF-007.
+Non-200 metadata responses now close without body reads, preserving the known
+HTTP status and mapped reason. Twelve regressions cover 401/403/429 with oversized
+and stalled bodies, through returned responses and raised HTTP errors. Focused
+gate: 81 passed; full core: 408 passed, 30 Docker/live deselected, 0 skips.
+Lint/type/docs and offline installed-wheel gates passed. Existing Docker results
+above are historical; this controller-only correction did not rerun Docker or
+perform any live provider call. Fresh PR CI remains unobserved at this checkpoint.
