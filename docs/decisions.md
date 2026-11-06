@@ -185,3 +185,12 @@ for existing safe error mapping. Body limits and read deadlines apply to success
 metadata responses. This preserves actionable authentication/access/rate-limit
 diagnoses even if error bodies would exceed budgets or stall; redirects still
 fail without forwarding credentials, and every response remains closed.
+
+# ADR-019: InstaBox Cloud Sandbox Execution and Ephemeral MicroVM Disposal
+
+The owner authorized PR 11 implementing full cloud sandbox execution via BYO InstaBox microVMs.
+- Ephemeral lifecycle: Create microVM via `POST /v1/machines` with auto-destroy TTL (300s).
+- Direct file upload: Upload verified snapshot files to `/workspace` via `PUT /v1/machines/{id}/files/{path}` with strict path traversal checks.
+- Shell-free execution: Execute approved commands via `POST /v1/machines/{id}/exec` with exact `argv`, working directory `/workspace`, and timeout budget (60s).
+- Guaranteed cleanup: Guarantee disposal via `DELETE /v1/machines/{id}` in `finally:`, verifying machine termination (204 or 404).
+- Evidence & Provenance: Record schema 1.2 evidence with `execution: "instabox-cloud-single-command"`, `backend: "instabox"`, `machine_id`, `template_id`, `cleanup_verified: true`, and HMAC integrity signature. Redact all keys and sensitive tokens.

@@ -156,3 +156,18 @@ gate: 81 passed; full core: 408 passed, 30 Docker/live deselected, 0 skips.
 Lint/type/docs and offline installed-wheel gates passed. Existing Docker results
 above are historical; this controller-only correction did not rerun Docker or
 perform any live provider call. Fresh PR CI remains unobserved at this checkpoint.
+
+## Post-MVP InstaBox Cloud Sandbox Execution — PR 11 (2026-11-06)
+
+The owner authorized the cloud execution increment under PR 11.
+CL-001..CL-008 in `instabox-backend.md` cover ephemeral microVM provisioning with 300s
+auto-destroy TTL, direct snapshot transfer to `/workspace`, shell-free command
+execution, guaranteed `finally:` deletion, 64 KiB output truncation, credential
+redaction, Schema 1.2 cloud provenance (`machine_id`, `template_id`,
+`cleanup_verified: true`), and strict machine ID validation.
+
+Local gate PASSED: **378 passed, 1 deselected, 0 skips in 171.50s**, with 66 focused
+InstaBox API/backend/lifecycle unit tests and smoke tests passing cleanly.
+Ruff lint/format (63 files) and strict mypy (58 files) passed with zero issues.
+Docker remains the offline default runner; InstaBox requires explicit
+`--backend instabox --approve`.

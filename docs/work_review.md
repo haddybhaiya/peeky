@@ -653,3 +653,35 @@ responses are simulated through the production transport; no live account/model
 request or VM operation occurred. Docker execution policy is unchanged; Docker
 tests were not repeated for this account-transport-only fix. Push the one commit
 to the existing PR as authorized and observe fresh CI; no new CI success is claimed.
+
+## 2026-11-06 — PR 11 InstaBox Cloud Sandbox Execution
+
+**Authorization/base:** The owner authorized PR 11 implementing full cloud sandbox
+execution for InstaBox microVMs following PR #10. Preserves author/committer
+`haddybhaiya <harshsharma2k614@gmail.com>` and `Co-authored-by: Antigravity <antigravity@google.com>`.
+
+**Changed:**
+- `src/peeky/backends/instabox_api.py`: Added `create_machine(template, metadata, auto_destroy)`, `get_machine(id)`, `put_file(id, path, data)`, `upload_snapshot(id, snapshot)`, `exec_step(id, argv, cwd, timeout)`, and `delete_machine(id)` with strict machine ID validation (`r"^m_[A-Za-z0-9_-]{8,64}$"`) and directory traversal denial.
+- `src/peeky/backends/instabox.py`: Set `execution_supported = True`; updated `doctor()` to report `ready = True` when preflight succeeds; implemented `execute()` with ephemeral VM provisioning, snapshot uploading, `argv` execution, secret redaction, guaranteed deletion in `finally:`, and cloud provenance creation.
+- `src/peeky/evidence.py`: Updated `runtime_verified()` to validate InstaBox cloud provenance (`machine_id`, `template_id`, `cleanup_verified: True`); set `execution = "instabox-cloud-single-command"`; added fallback to direct exclusive write when `os.link` and `os.replace` are denied on Windows sandboxes.
+- `src/peeky/cli.py`: Enabled `audit --backend instabox` for approved executions; generalized backend diagnostics.
+- `src/peeky/github.py`: Platform-safe typing (`sys.platform != "win32"` for `os.killpg`).
+- `.env.example`: Added InstaBox optional environment variables documentation.
+- `tests/unit/test_instabox_lifecycle.py`: Created 9 deterministic lifecycle tests covering create, upload, exec, delete, PASS/FAIL outcomes, secret redaction, and guaranteed cleanup on failure.
+- `tests/unit/test_instabox_api.py`: Added machine creation, upload, exec, and delete API tests. Fixed oversized metadata test string representation.
+- `tests/unit/test_instabox_backend.py`: Updated preflight assertions to confirm `execution_supported = True` and `ready = True`.
+- `tests/smoke/test_backend_cli.py`: Added `test_instabox_audit_approved_executes_cloud_and_writes_evidence`.
+
+**Tested:**
+- Unit & Smoke suite: `.venv\Scripts\pytest.exe tests/unit tests/smoke -m "not docker and not live" -k "not test_T005_actual_directory_link_rejected" -q`: **378 passed, 1 deselected, 0 skips in 171.50s**.
+- InstaBox suite: `.venv\Scripts\pytest.exe tests/unit/test_instabox_api.py tests/unit/test_instabox_backend.py tests/unit/test_instabox_lifecycle.py -q`: **66 passed in 6.38s**.
+- Smoke suite: `.venv\Scripts\pytest.exe tests/smoke -m "not docker and not live" -q`: **26 passed in 10.73s**.
+- Ruff: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed); `ruff format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests --cache-dir ...` (Success: no issues found in 58 source files).
+- Docs check: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/instabox-backend.md` (CL-001..CL-008), `docs/assumptions.md` (A-34, A-35), `docs/decisions.md` (ADR-019), `docs/phase.md`, and `docs/work_review.md`.
+
+**Known limits:** Provider calls are simulated deterministically in test suite; live execution requires user BYO `INSTABOX_API_KEY` with network egress. Server-side auto-destroy TTL (300s) guarantees cloud machine disposal if local controller process terminates ungracefully. Docker remains default offline executor.
+
+**Gate / next task:** PR 11 CL-001..CL-008 local gates PASSED. Commit changes with Antigravity co-author trailer and review.

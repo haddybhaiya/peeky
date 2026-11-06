@@ -98,11 +98,44 @@ schema 1.2 evidence policy remain in force.
 | BF-008 | Docker and URL audit/report behavior, default doctor output and installed artifact remain compatible | existing core/Docker suite, `test_backend_cli.py`, `scripts/smoke_wheel.py` |
 
 Tests inject documented metadata and transport failures; the existing Docker
-integration gate executes real containers. A live InstaBox account preflight has
-not been performed for this increment, and no provider VM has been created.
-Future work must add reviewed VM creation, source transfer, constrained execution,
-owned deletion/expiry and cloud-specific evidence before enabling cloud audits.
-Crash recovery and orphan reconciliation require their own lifecycle design.
+integration gate executes real containers.
+
+## Cloud microVM execution lifecycle
+
+With `--backend instabox --approve`, Peeky executes an approved audit step inside
+an ephemeral InstaBox Firecracker microVM instead of local Docker. Docker remains
+the default offline runner.
+
+### Lifecycle stages
+
+1. **Machine Provisioning (`POST /v1/machines`)**:
+   - Machine is created using the selected template (default `ci`) and tagged with metadata (`managed_by: peeky-controller`).
+   - Server-side auto-destroy TTL (300 seconds) is requested at creation time so orphaned VMs terminate automatically if network connection drops.
+2. **Source Transfer (`PUT /v1/machines/{id}/files/{path}`)**:
+   - Captured Git snapshot files are uploaded directly to `/workspace/{relpath}`.
+   - Strict path traversal validation rejects paths escaping `/workspace` (e.g., `..`, leading slashes).
+3. **Execution (`POST /v1/machines/{id}/exec`)**:
+   - Command is executed with exact `argv` (no shell wrapping), working directory `/workspace`, and execution timeout budget (60s).
+   - Execution stdout and stderr are captured with 64 KiB truncation limits.
+4. **Guaranteed Disposal (`DELETE /v1/machines/{id}`)**:
+   - Deletion is executed in a guaranteed `finally:` block regardless of command pass, fail, or exception.
+   - Deletion checks confirm the machine is terminated (`204 No Content` or `404 Not Found`), ensuring no persistent machines remain.
+5. **HMAC Provenance & Evidence (`evidence.json`)**:
+   - Schema 1.2 evidence records `execution: "instabox-cloud-single-command"`, `backend: "instabox"`, `machine_id`, `template_id`, `cleanup_verified: true`, and controller HMAC signature.
+   - All credentials (`INSTABOX_API_KEY`) and sensitive patterns are redacted before provenance recording.
+
+## Cloud execution acceptance gates
+
+| ID | Required behavior | Coverage |
+|---|---|---|
+| CL-001 | Ephemeral VM provisioning with template and auto-destroy TTL (300s) | `test_instabox_lifecycle.py`, `test_instabox_api.py` |
+| CL-002 | Direct source snapshot upload to `/workspace` with path traversal rejection | `test_instabox_lifecycle.py`, `test_instabox_api.py` |
+| CL-003 | Constrained shell-free argv execution with working dir `/workspace` and timeout | `test_instabox_lifecycle.py`, `test_instabox_api.py` |
+| CL-004 | Guaranteed deletion in `finally:` block; cleanup verified or 404 handled | `test_instabox_lifecycle.py`, `test_instabox_backend.py` |
+| CL-005 | Output streams bounded to 64 KiB; API key and secrets redacted from evidence | `test_instabox_lifecycle.py` |
+| CL-006 | Schema 1.2 cloud provenance with `machine_id`, `template_id`, `cleanup_verified` | `test_instabox_lifecycle.py`, `test_evidence.py` |
+| CL-007 | Strict machine ID validation (`r"^m_[A-Za-z0-9_-]{8,64}$"`) and error mapping | `test_instabox_api.py`, `test_instabox_lifecycle.py` |
+| CL-008 | CLI audit executes cloud when approved; Docker remains default | `test_backend_cli.py` |
 
 ## Provider contract references
 
