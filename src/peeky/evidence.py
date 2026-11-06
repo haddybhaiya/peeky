@@ -53,6 +53,18 @@ def verdict(steps: list[Step], results: list[StepResult]) -> str:
 
 def runtime_verified(result: StepResult, source: SourceIdentity, image: str) -> bool:
     p = result.provenance
+    if p.get("backend") == "instabox":
+        return (
+            p.get("source_sha256") == source.source_sha256
+            and p.get("policy_sha256") == DEFAULT_POLICY.sha256
+            and bool(p.get("machine_id"))
+            and bool(p.get("template_id"))
+            and p.get("target_started") is True
+            and p.get("logs_complete") is True
+            and p.get("cleanup_verified") is True
+            and p.get("stdout_sha256") == hashlib.sha256(result.stdout.encode()).hexdigest()
+            and p.get("stderr_sha256") == hashlib.sha256(result.stderr.encode()).hexdigest()
+        )
     return (
         p.get("source_sha256") == source.source_sha256
         and p.get("policy_sha256") == DEFAULT_POLICY.sha256
@@ -104,9 +116,15 @@ def report(
         "policy_sha256": policy.sha256,
         "run": run.dict(),
         "image": image,
-        "execution": "offline-docker-single-command",
+        "execution": "instabox-cloud-single-command"
+        if any(r.provenance.get("backend") == "instabox" for r in results)
+        else "offline-docker-single-command",
         "image_digest": next(
-            (r.provenance.get("image_digest") for r in results if r.provenance.get("image_digest")),
+            (
+                r.provenance.get("image_digest") or r.provenance.get("template_id")
+                for r in results
+                if r.provenance.get("image_digest") or r.provenance.get("template_id")
+            ),
             None,
         ),
         "coverage": {
@@ -151,7 +169,18 @@ def write_report(data: dict[str, object], output: Path) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         # Atomic, exclusive visibility on supported local filesystems; never replace a record.
-        os.link(temporary, target)
+        try:
+            os.link(temporary, target)
+        except (PermissionError, OSError):
+            if target.exists():
+                raise FileExistsError(f"Record {target} already exists") from None
+            try:
+                os.replace(temporary, target)
+            except (PermissionError, OSError):
+                with target.open("x", encoding="utf-8") as dest:
+                    dest.write(encoded)
+                    dest.flush()
+                    os.fsync(dest.fileno())
     finally:
         temporary.unlink(missing_ok=True)
     return target
