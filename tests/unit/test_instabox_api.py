@@ -86,7 +86,9 @@ def test_provider_error_bodies_never_reach_errors(status: int) -> None:
 
 
 @pytest.mark.parametrize(
-    "body", [b"[]", b'{"a":1,"a":2}', b'{"a":NaN}', b"\xff", b"x" * (MAX_METADATA_BYTES + 1)]
+    "body",
+    [b"[]", b'{"a":1,"a":2}', b'{"a":NaN}', b"\xff", b"x" * (MAX_METADATA_BYTES + 1)],
+    ids=["array", "dup_key", "nan", "utf8", "oversized"],
 )
 def test_malformed_or_oversized_metadata_cannot_succeed(body: bytes) -> None:
     def transport(*args: object) -> MetadataResponse:

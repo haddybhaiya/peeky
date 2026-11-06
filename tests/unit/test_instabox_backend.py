@@ -7,7 +7,7 @@ import pytest
 from peeky.backends import get_backend
 from peeky.backends.base import BackendUnavailable, SandboxBackend
 from peeky.backends.instabox import InstaboxBackend
-from peeky.backends.instabox_api import InstaboxConfig, MetadataResponse
+from peeky.backends.instabox_api import InstaboxConfig, InstaboxError, MetadataResponse
 from peeky.images import DEFAULT_IMAGE
 from peeky.parser import read_steps
 from peeky.sources import snapshot
@@ -33,13 +33,13 @@ def backend(data: dict[str, object], calls: list[str]) -> InstaboxBackend:
     return InstaboxBackend(InstaboxConfig(KEY), transport)
 
 
-def test_read_only_success_never_claims_cloud_audit_readiness() -> None:
+def test_preflight_success_confirms_cloud_readiness() -> None:
     calls: list[str] = []
     selected: SandboxBackend = backend(responses(), calls)
     status = selected.doctor()
-    assert status.preflight_ok and not status.ready and not status.execution_supported
+    assert status.preflight_ok and status.ready and status.execution_supported
     assert calls == ["/v1/me", "/v1/templates", "/v1/usage"]
-    assert status.checks["create_delete_permissions"] == "not_verified"
+    assert status.checks["execution"] == "supported"
     assert KEY not in json.dumps(status.to_dict())
 
 
@@ -90,15 +90,12 @@ def test_no_key_fails_offline(monkeypatch: pytest.MonkeyPatch) -> None:
     assert status.reason == "MISSING_API_KEY" and not status.preflight_ok
 
 
-def test_cloud_execution_never_reads_key_or_contacts_api(
+def test_cloud_execution_fails_safely_when_key_is_missing(
     repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def forbidden(*args: object) -> InstaboxConfig:
-        pytest.fail("Cloud execution loaded credentials")
-
-    monkeypatch.setattr(InstaboxConfig, "from_environment", forbidden)
+    monkeypatch.delenv("INSTABOX_API_KEY", raising=False)
     with snapshot(repo) as source:
-        with pytest.raises(BackendUnavailable, match="not implemented"):
+        with pytest.raises(InstaboxError, match="Set INSTABOX_API_KEY"):
             get_backend("instabox").execute(read_steps(source.path)[0], source, DEFAULT_IMAGE, 1)
 
 
