@@ -89,7 +89,7 @@ def main() -> int:
             [
                 cli,
                 "audit",
-                "https://github.com/fixture/project",
+                str(ROOT / "tests/fixtures/good_repo"),
                 "--backend",
                 "instabox",
                 "--approve",

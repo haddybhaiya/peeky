@@ -79,7 +79,7 @@ class InstaboxBackend:
 
         def result(ok: bool, reason: str, message: str) -> BackendReadiness:
             return BackendReadiness(
-                self.name, ok, self.execution_supported and ok, reason, message, checks, details
+                self.name, ok, self.execution_supported, reason, message, checks, details
             )
 
         try:
