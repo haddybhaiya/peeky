@@ -1,9 +1,10 @@
-# BYO InstaBox backend foundation
+# BYO InstaBox cloud sandbox backend
 
-This post-MVP increment introduces a shared sandbox backend contract and an
-explicit, read-only account check for a user-supplied InstaBox account. Docker
-remains the only audit executor. It does not create or delete machines, execute
-cloud commands, upload repositories, open SSH connections or alter account state.
+This increment introduces an opt-in cloud sandbox backend using user-supplied
+InstaBox accounts. Docker remains the default offline executor. When selected
+explicitly with `--backend instabox --approve`, Peeky provisions an ephemeral
+Firecracker microVM, streams verified repository snapshots into `/workspace`,
+executes target commands shell-free, and guarantees disposal in `finally:`.
 
 ## Commands and configuration
 
@@ -12,6 +13,7 @@ peeky doctor                              # existing Docker check
 peeky doctor --backend docker --json
 peeky doctor --backend instabox --json    # opt-in account metadata reads
 peeky audit https://github.com/OWNER/REPO --backend docker --approve
+peeky audit https://github.com/OWNER/REPO --backend instabox --approve  # cloud execution
 ```
 
 Supply the key through the invoking process's environment or a secret manager.
@@ -21,13 +23,14 @@ Gemma model workflow; do not put InstaBox fields in that model configuration.
 
 | Environment variable | Meaning |
 |---|---|
-| `INSTABOX_API_KEY` | Required for the selected InstaBox doctor only; a 52-character `ibk_` API key |
+| `INSTABOX_API_KEY` | Required for InstaBox doctor and audit; a 52-character `ibk_` API key |
 | `INSTABOX_API_URL` | Optional; only the exact official `https://api.instabox.sh` origin is accepted |
-| `PEEKY_INSTABOX_TEMPLATE` | Optional catalog template ID, default `ci`; the check requires an offered x86_64 template |
+| `PEEKY_INSTABOX_TEMPLATE` | Optional catalog template ID, default `ci`; requires an offered x86_64 template |
 
-Use a key authorized to read templates and usage (`machines:read` or
-`images:read`, per the provider documentation). This increment needs no write or
-delete permission. Docker commands and source inspection do not load this key or
+For `peeky doctor`, a key authorized to read templates and usage (`machines:read` or
+`images:read`) is sufficient. For `peeky audit --backend instabox --approve`, the key
+additionally requires machine provisioning and disposal permissions (`machines:create`,
+`machines:delete`). Docker commands and source inspection do not load this key or
 contact InstaBox. There is no backend auto-detection or implicit fallback.
 
 ## Meaning of the result
@@ -47,17 +50,16 @@ not establish create/delete permission, subscription access to a template or
 provider physical capacity. Those checks remain `not_verified` in JSON. This is
 account metadata, not a provisioning guarantee or a target audit result.
 
-`preflight_ok: true` and exit 0 mean these read-only checks passed. In this
-foundation, `execution_supported` and `ready` always remain **false** for InstaBox,
-with reason `PREFLIGHT_OK` and an explicit cloud-execution limitation. Configuration,
-authentication, quota and service failures return exit 3 with a stable reason and
-safe message. The default Docker doctor's existing text/JSON and exit behavior
-remain unchanged.
+`preflight_ok: true`, `execution_supported: true` and `ready: true` with exit 0
+mean account preflight passed and the backend is ready for audit execution.
+Configuration, authentication, quota and service failures return exit 3 with a
+stable reason and safe message. The default Docker doctor's existing text/JSON
+and exit behavior remain unchanged.
 
-`peeky audit … --backend instabox --approve` returns exit 3 before credentials,
-source fetching/capture, Docker checks or evidence writes. Without `--approve`,
-the existing approval gate returns exit 2 first. It cannot silently run locally.
-No cloud execution or evidence schema is advertised by this increment.
+Without `--approve`, `peeky audit … --backend instabox` returns exit 2 first.
+When approved, it runs account preflight, creates an ephemeral microVM with a
+300s server-side auto-destroy TTL, executes the step shell-free, destroys the
+machine, and writes Schema 1.2 evidence under `instabox-cloud-single-command`.
 
 ## Transport and credential boundary
 

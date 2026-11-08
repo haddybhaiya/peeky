@@ -685,3 +685,54 @@ execution for InstaBox microVMs following PR #10. Preserves author/committer
 **Known limits:** Provider calls are simulated deterministically in test suite; live execution requires user BYO `INSTABOX_API_KEY` with network egress. Server-side auto-destroy TTL (300s) guarantees cloud machine disposal if local controller process terminates ungracefully. Docker remains default offline executor.
 
 **Gate / next task:** PR 11 CL-001..CL-008 local gates PASSED. Commit changes with Antigravity co-author trailer and review.
+
+## 2026-11-08 — PR #11 code review feedback and hardening
+
+**Authorization/base:** Addressed all 8 code review comments on PR #11 and CI failure in `scripts/smoke_wheel.py`. Base revision `1e20e61`.
+
+**Changed:**
+- `src/peeky/backends/instabox_api.py`:
+  - Percent-encoded snapshot upload path components in `put_file()` to handle spaces, Unicode, `#`, and `%`.
+  - Added polling loop to `delete_machine()` when HTTP 202 Accepted is returned, polling `get_machine()` until 404/RESOURCE_NOT_FOUND or deadline.
+- `src/peeky/domain.py`:
+  - Defined frozen `CloudPolicy` dataclass with `canonical_hash` and properties matching microVM execution limits.
+- `src/peeky/backends/instabox.py`:
+  - Enforced per-stream log limit (65,536 bytes) with output truncation, setting `logs_complete = False` and `outcome = "INCONCLUSIVE"`, `reason = "LOG_LIMIT"` when exceeded.
+  - Validated requested image before execution against official Python policy or cloud template ID.
+  - Bound `CloudPolicy.sha256` and template identity in provenance.
+  - Converted snapshot upload and execution errors into `INCONCLUSIVE` StepResults with failure reason and cleanup verification rather than escaping and skipping audit record generation.
+- `src/peeky/evidence.py`:
+  - In `report()`, bound `CloudPolicy` sha256 and template identity for cloud execution.
+  - In `runtime_verified()`, validated cloud records against `CloudPolicy.sha256` and template image digest.
+  - In `write_report()`, ensured direct fallback write unlinks partial `.json` records on write/flush failure.
+- `src/peeky/reports.py`:
+  - In `summarize_record()`, supported `instabox-cloud-single-command` and verified `CloudPolicy.sha256`, preserving PASS verdicts in `export_summary()`.
+- `docs/instabox-backend.md`:
+  - Rewrote opening sections 1-3 to remove conflicting legacy descriptions and document active opt-in cloud execution under `--backend instabox --approve`.
+- `scripts/smoke_wheel.py`:
+  - Updated preflight check target to use fixture repository path.
+- `tests/unit/test_instabox_api.py`:
+  - Added `test_put_file_escapes_special_characters`, `test_delete_machine_202_accepted_polls_until_gone`, and `test_delete_machine_202_accepted_timeout_returns_false`.
+- `tests/unit/test_instabox_lifecycle.py`:
+  - Added `test_over_budget_output_produces_inconclusive_log_limit` and `test_backend_execute_rejects_invalid_image`. Updated exception cleanup test to expect `INCONCLUSIVE` result with cleanup verified.
+- `tests/unit/test_evidence.py`:
+  - Added `test_write_report_fallback_branches_and_failure_cleanup` and `test_report_cloud_execution_uses_cloud_policy_and_template_image`.
+- `tests/unit/test_reports.py`:
+  - Added `test_cloud_audit_summary_export_preserves_pass_verdict`.
+- `tests/unit/test_sources.py`:
+  - Skipped Windows junction link test if `mklink /J` fails due to unprivileged environment.
+
+**Tested:**
+- Pinned test suite: `.venv\Scripts\pytest.exe tests/unit tests/smoke -m "not docker and not live" -q`: **386 passed, 1 skipped in 182.43s**.
+- Pinned InstaBox tests: `.venv\Scripts\pytest.exe tests/unit/test_instabox_api.py tests/unit/test_instabox_lifecycle.py -vv`: **51 passed in 7.18s**.
+- Ruff checks: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed).
+- Ruff format: `.venv\Scripts\ruff.exe format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests --cache-dir ...` (Success: no issues found in 58 source files).
+- Documentation validation: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/instabox-backend.md`, `docs/assumptions.md` (A-36), and `docs/work_review.md`.
+
+**Known limits:** Cloud microVM execution remains strictly opt-in via `--backend instabox --approve` with user-supplied API key. Windows sandbox junction creation requires OS-level privileges; other platforms execute native symlinks.
+
+**Phase gate:** PR #11 review hardening gate PASSED.
+
