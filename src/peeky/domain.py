@@ -77,6 +77,31 @@ DEFAULT_POLICY = RunPolicy()
 
 
 @dataclass(frozen=True)
+class CloudPolicy:
+    version: str = "1"
+    backend: str = "instabox"
+    template_id: str = "ci"
+    command_timeout_seconds: int = 20
+    auto_destroy_seconds: int = 300
+    log_bytes_per_stream: int = 65_536
+    max_audit_steps: int = 1
+    allowed_binaries: tuple[str, ...] = ("python", "python3", "pytest")
+    forbidden_shell_chars: str = ";&|<>`$\\"
+
+    def __post_init__(self) -> None:
+        for value in asdict(self).values():
+            if isinstance(value, int) and value <= 0:
+                raise ValueError("Policy limits must be positive")
+
+    @property
+    def sha256(self) -> str:
+        return canonical_hash(asdict(self))
+
+
+DEFAULT_CLOUD_POLICY = CloudPolicy()
+
+
+@dataclass(frozen=True)
 class SourceFile:
     path: str
     mode: str

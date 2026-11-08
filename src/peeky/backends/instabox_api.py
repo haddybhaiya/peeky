@@ -7,6 +7,7 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from collections.abc import Callable
@@ -319,10 +320,12 @@ class InstaboxClient:
     def put_file(self, machine_id: str, remote_path: str, content: bytes) -> None:
         self._validate_machine_id(machine_id)
         clean_path = remote_path.strip("/").replace("\\", "/")
-        if ".." in clean_path.split("/"):
+        parts = clean_path.split("/")
+        if any(part in ("", "..", ".") for part in parts):
             raise InstaboxError("INVALID_PATH", "Directory traversal in remote path is forbidden")
+        quoted_path = "/".join(urllib.parse.quote(part, safe="") for part in parts)
         req = urllib.request.Request(
-            f"{self.config.api_url}/v1/machines/{machine_id}/files/{clean_path}",
+            f"{self.config.api_url}/v1/machines/{machine_id}/files/{quoted_path}",
             data=content,
             headers={
                 "X-API-Key": self.config.api_key,
@@ -393,7 +396,7 @@ class InstaboxClient:
             self._map_http_error(res.status, "exec command")
         return self._parse_json(res.body)
 
-    def delete_machine(self, machine_id: str) -> None:
+    def delete_machine(self, machine_id: str, *, timeout: float = 3.0) -> bool:
         self._validate_machine_id(machine_id)
         req = urllib.request.Request(
             f"{self.config.api_url}/v1/machines/{machine_id}",
@@ -408,3 +411,16 @@ class InstaboxClient:
             raise InstaboxError("CONNECTION_FAILED", "Failed to delete InstaBox machine") from None
         if res.status not in (200, 202, 204, 404):
             self._map_http_error(res.status, "delete machine")
+        if res.status in (200, 204, 404):
+            return True
+        # If 202 Accepted, deletion is pending. Poll until 404 within bounded deadline.
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            time.sleep(0.05)
+            try:
+                self.get_machine(machine_id)
+            except InstaboxError as exc:
+                if exc.http_status == 404 or exc.code == "RESOURCE_NOT_FOUND":
+                    return True
+                raise
+        return False
