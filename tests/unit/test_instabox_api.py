@@ -113,3 +113,45 @@ def test_invalid_template_configuration_is_safe_and_offline(template: str) -> No
     with pytest.raises(InstaboxError) as error:
         InstaboxClient(InstaboxConfig(KEY, template_id=template))
     assert error.value.code == "INVALID_TEMPLATE" and template not in str(error.value)
+
+
+def test_put_file_escapes_special_characters() -> None:
+    calls: list[str] = []
+
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        calls.append(request.full_url)
+        return MetadataResponse(204, b"")
+
+    client = InstaboxClient(InstaboxConfig(KEY), transport)
+    client.put_file("m_valid12345678", "notes#v2.py", b"content")
+    assert calls[0] == f"{API_URL}/v1/machines/m_valid12345678/files/notes%23v2.py"
+
+    client.put_file("m_valid12345678", "sub dir/file%name.txt", b"content")
+    assert calls[1] == f"{API_URL}/v1/machines/m_valid12345678/files/sub%20dir/file%25name.txt"
+
+
+def test_delete_machine_202_accepted_polls_until_gone() -> None:
+    calls: list[str] = []
+
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        calls.append(request.get_method())
+        if request.get_method() == "DELETE":
+            return MetadataResponse(202, b'{"status":"deleting"}')
+        if len(calls) >= 3:
+            return MetadataResponse(404, b'{"error":"not found"}')
+        return MetadataResponse(200, b'{"status":"deleting"}')
+
+    client = InstaboxClient(InstaboxConfig(KEY), transport)
+    assert client.delete_machine("m_valid12345678", timeout=1.0) is True
+    assert calls[0] == "DELETE"
+    assert "GET" in calls
+
+
+def test_delete_machine_202_accepted_timeout_returns_false() -> None:
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        if request.get_method() == "DELETE":
+            return MetadataResponse(202, b'{"status":"deleting"}')
+        return MetadataResponse(200, b'{"status":"deleting"}')
+
+    client = InstaboxClient(InstaboxConfig(KEY), transport)
+    assert client.delete_machine("m_valid12345678", timeout=0.1) is False
