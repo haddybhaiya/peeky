@@ -238,8 +238,56 @@ def test_backend_execute_guarantees_cleanup_on_exception(tmp_path: Path) -> None
     with snapshot(Path("tests/fixtures/good_repo")) as snap:
         backend = InstaboxBackend(InstaboxConfig(KEY), transport)
         step = Step(id="S1", command="python smoke.py", line=1)
-        with pytest.raises(InstaboxError):
-            backend.execute(step, snap, "python:3.12-slim", timeout=10.0)
+        res = backend.execute(step, snap, "python:3.12-slim", timeout=10.0)
 
-    # Machine must be deleted even if upload failed!
+    # Errors during upload are recorded as INCONCLUSIVE with cleanup verified
+    assert res.outcome == "INCONCLUSIVE"
+    assert "CONNECTION_FAILED" in res.reason or "Upload connection stalled" in res.reason
+    assert res.provenance["cleanup_verified"] is True
     assert deleted == [MID]
+
+
+def test_over_budget_output_produces_inconclusive_log_limit(tmp_path: Path) -> None:
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        method = request.get_method()
+        url = request.full_url
+        if method == "POST" and url.endswith("/v1/machines"):
+            return MetadataResponse(201, json.dumps({"id": MID, "status": "running"}).encode())
+        if method == "PUT" and "/files/" in url:
+            return MetadataResponse(204, b"")
+        if method == "POST" and url.endswith(f"/v1/machines/{MID}/exec"):
+            return MetadataResponse(
+                200,
+                json.dumps(
+                    {
+                        "exitCode": 0,
+                        "stdout": "A" * 70_000,
+                        "stderr": "",
+                        "timedOut": False,
+                    }
+                ).encode(),
+            )
+        if method == "DELETE" and url.endswith(f"/v1/machines/{MID}"):
+            return MetadataResponse(204, b"")
+        return MetadataResponse(404, b"")
+
+    with snapshot(Path("tests/fixtures/good_repo")) as snap:
+        backend = InstaboxBackend(InstaboxConfig(KEY), transport)
+        step = Step(id="S1", command="python smoke.py", line=1)
+        res = backend.execute(step, snap, "python:3.12-slim", timeout=10.0)
+
+    assert res.outcome == "INCONCLUSIVE"
+    assert res.reason == "LOG_LIMIT"
+    assert res.provenance["logs_complete"] is False
+    assert len(res.stdout) == 65_536
+
+
+def test_backend_execute_rejects_invalid_image() -> None:
+    with snapshot(Path("tests/fixtures/good_repo")) as snap:
+        backend = InstaboxBackend(InstaboxConfig(KEY), lambda *args: MetadataResponse(200, b""))
+        step = Step(id="S1", command="python smoke.py", line=1)
+        res = backend.execute(step, snap, "--malicious-flag", timeout=10.0)
+
+    assert res.outcome == "INCONCLUSIVE"
+    assert "not supported" in res.reason
+    assert res.provenance["cleanup_verified"] is True
