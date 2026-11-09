@@ -63,14 +63,22 @@ machine, and writes Schema 1.2 evidence under `instabox-cloud-single-command`.
 
 ## Transport and credential boundary
 
-The standard-library client allows only the three exact GET paths above and the
-fixed official HTTPS origin. Redirects are refused, TLS verification remains on,
-and the trusted operator's configured proxy and CA setup is preserved. Use that
-proxy setup only when trusted to handle the provider connection. Keys are sent in
-`X-API-Key`, never in a URL. No provider body, login, email or CSRF token is printed;
-output includes only controller-selected status, template, numeric account ID and
-machine counts. Configuration repr hides the key, and valid InstaBox key patterns
-are redacted even when no matching environment variable remains.
+The standard-library client restricts network communication exclusively to the
+fixed official HTTPS origin (`https://api.instabox.sh`). For `peeky doctor`, only
+the three preflight GET paths (`/v1/me`, `/v1/templates`, `/v1/usage`) are requested.
+For approved cloud audits (`peeky audit … --backend instabox --approve`), the client
+issues dedicated microVM lifecycle requests (`POST /v1/machines`,
+`PUT /v1/machines/{id}/files/{path}`, `POST /v1/machines/{id}/exec`,
+`DELETE /v1/machines/{id}`, `GET /v1/machines/{id}`) to provision, populate, execute,
+and dispose of the ephemeral sandbox.
+
+Redirects are refused, TLS verification remains enforced, and the trusted operator's
+configured proxy and CA setup is preserved. Use that proxy setup only when trusted to
+handle the provider connection. Keys are sent in `X-API-Key`, never in query
+parameters or URLs. No provider body, login, email or CSRF token is printed; output
+includes only controller-selected status, template, numeric account ID and machine
+counts. Configuration repr hides the key, and valid InstaBox key patterns are redacted
+even when no matching environment variable remains.
 
 Each request has a five-second socket timeout and an elapsed deadline checked
 between response reads, with a 256 KiB response-body budget. The deadline is not
@@ -84,9 +92,16 @@ would stall. Responses close on success and failure.
 These are controller account requests. No target code, README, model output or
 repository input chooses provider URLs, permissions or lifecycle operations. The
 Docker runner's pinned image, offline networking, isolation, budgets, cleanup and
-schema 1.2 evidence policy remain in force.
+schema 1.2 evidence policy remain in force for local Docker runs, while cloud runs
+enforce matching microVM isolation, output stream budgets, guaranteed disposal in
+`finally:`, and Schema 1.2 cloud provenance.
 
-## Foundation acceptance gates
+## Read-only foundation acceptance gates (PR #10 historical)
+
+The acceptance gates in this table define the initial read-only preflight foundation
+established in PR #10 prior to cloud execution support. In that foundation stage,
+cloud audits stopped before credentials, acquisition, or execution. Current cloud
+microVM execution behavior is governed by the CL-001 through CL-008 gates below.
 
 | ID | Required behavior | Coverage |
 |---|---|---|

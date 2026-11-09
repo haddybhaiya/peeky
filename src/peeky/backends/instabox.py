@@ -229,13 +229,21 @@ class InstaboxBackend:
             log_limit = cloud_policy.log_bytes_per_stream
             limited = stdout_seen > log_limit or stderr_seen > log_limit
 
-            if stdout_seen > log_limit:
-                raw_stdout = stdout_bytes[:log_limit].decode("utf-8", errors="replace")
-            if stderr_seen > log_limit:
-                raw_stderr = stderr_bytes[:log_limit].decode("utf-8", errors="replace")
+            # Redact complete returned strings before truncating retained text
+            redacted_stdout = redact(raw_stdout)
+            redacted_stderr = redact(raw_stderr)
+            redacted_stdout_bytes = redacted_stdout.encode("utf-8")
+            redacted_stderr_bytes = redacted_stderr.encode("utf-8")
 
-            stdout = redact(raw_stdout)
-            stderr = redact(raw_stderr)
+            if len(redacted_stdout_bytes) > log_limit:
+                stdout = redacted_stdout_bytes[:log_limit].decode("utf-8", errors="replace")
+            else:
+                stdout = redacted_stdout
+
+            if len(redacted_stderr_bytes) > log_limit:
+                stderr = redacted_stderr_bytes[:log_limit].decode("utf-8", errors="replace")
+            else:
+                stderr = redacted_stderr
             exit_code = raw_res.get("exitCode")
             timed_out = bool(raw_res.get("timedOut", False))
             logs_complete = not (limited or timed_out)
