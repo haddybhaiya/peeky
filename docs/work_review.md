@@ -736,3 +736,31 @@ execution for InstaBox microVMs following PR #10. Preserves author/committer
 
 **Phase gate:** PR #11 review hardening gate PASSED.
 
+
+## 2026-11-09 · PR #11 review round 2: boundary credential redaction and doc harmonization
+
+**Authorization/base:** Addressed PR #11 review feedback on output truncation credential leakage (`src/peeky/backends/instabox.py`) and setup instruction contradiction (`docs/instabox-backend.md`).
+
+**Changed:**
+- `src/peeky/backends/instabox.py`:
+  - Applied `redact()` to complete returned stdout/stderr strings before truncating retained text to `log_limit` (65,536 bytes). Boundary-crossing credentials (e.g., bare 52-character InstaBox keys spanning the stream cutoff) are now redacted before truncation, preventing exposed key prefixes from being saved in evidence.
+  - Retained original unredacted byte counts (`stdout_seen`, `stderr_seen`) to determine `limited`, `LOG_LIMIT`, and `logs_complete = False`.
+- `tests/unit/test_instabox_lifecycle.py`:
+  - Added unit test `test_boundary_straddling_credential_is_redacted_before_truncation` verifying that an `ibk_` key spanning byte offset 65,520 to 65,572 is replaced with `[REDACTED]`, leaving neither the full key nor truncated prefix in retained stdout, while assigning `LOG_LIMIT`.
+- `docs/instabox-backend.md`:
+  - Updated "Transport and credential boundary" to distinguish between read-only `doctor` preflight (the 3 GET paths) and approved `audit` lifecycle endpoints (`POST /v1/machines`, `PUT /v1/machines/{id}/files/{path}`, `POST /v1/machines/{id}/exec`, `DELETE /v1/machines/{id}`, `GET /v1/machines/{id}`).
+  - Labeled foundation acceptance table as `## Read-only foundation acceptance gates (PR #10 historical)` to eliminate contradiction with the active microVM execution lifecycle (CL-001..CL-008).
+
+**Tested:**
+- Pinned InstaBox lifecycle tests: `.venv\Scripts\pytest.exe tests/unit/test_instabox_lifecycle.py -vv`: **12 passed**.
+- Ruff checks: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed).
+- Ruff format: `.venv\Scripts\ruff.exe format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests` (Success: no issues found in 58 source files).
+- Documentation validation: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/instabox-backend.md` and `docs/work_review.md`.
+
+**Known limits:** Complete returned strings are held in memory during redaction before output truncation; memory usage remains bounded by the 256 KiB transport response limit.
+
+**Phase gate:** PR #11 review round 2 PASSED.
+
