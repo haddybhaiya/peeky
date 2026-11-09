@@ -291,3 +291,45 @@ def test_backend_execute_rejects_invalid_image() -> None:
     assert res.outcome == "INCONCLUSIVE"
     assert "not supported" in res.reason
     assert res.provenance["cleanup_verified"] is True
+
+
+def test_boundary_straddling_credential_is_redacted_before_truncation(tmp_path: Path) -> None:
+    secret_key = "ibk_" + "z" * 48
+    # 65519 chars + space gives 65520 chars prefix, so secret_key crosses the 65,536 boundary
+    padding = "A" * 65519 + " "
+    stream_output = padding + secret_key + "\n"
+
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        method = request.get_method()
+        url = request.full_url
+        if method == "POST" and url.endswith("/v1/machines"):
+            return MetadataResponse(201, json.dumps({"id": MID, "status": "running"}).encode())
+        if method == "PUT" and "/files/" in url:
+            return MetadataResponse(204, b"")
+        if method == "POST" and url.endswith(f"/v1/machines/{MID}/exec"):
+            return MetadataResponse(
+                200,
+                json.dumps(
+                    {
+                        "exitCode": 0,
+                        "stdout": stream_output,
+                        "stderr": "",
+                        "timedOut": False,
+                    }
+                ).encode(),
+            )
+        if method == "DELETE" and url.endswith(f"/v1/machines/{MID}"):
+            return MetadataResponse(204, b"")
+        return MetadataResponse(404, b"")
+
+    with snapshot(Path("tests/fixtures/good_repo")) as snap:
+        backend = InstaboxBackend(InstaboxConfig(KEY), transport)
+        step = Step(id="S1", command="python smoke.py", line=1)
+        res = backend.execute(step, snap, "python:3.12-slim", timeout=10.0)
+
+    assert res.outcome == "INCONCLUSIVE"
+    assert res.reason == "LOG_LIMIT"
+    assert res.provenance["logs_complete"] is False
+    assert secret_key not in res.stdout
+    assert secret_key[:16] not in res.stdout
+    assert "[REDACTED]" in res.stdout
