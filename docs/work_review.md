@@ -653,3 +653,114 @@ responses are simulated through the production transport; no live account/model
 request or VM operation occurred. Docker execution policy is unchanged; Docker
 tests were not repeated for this account-transport-only fix. Push the one commit
 to the existing PR as authorized and observe fresh CI; no new CI success is claimed.
+
+## 2026-11-06 — PR 11 InstaBox Cloud Sandbox Execution
+
+**Authorization/base:** The owner authorized PR 11 implementing full cloud sandbox
+execution for InstaBox microVMs following PR #10. Preserves author/committer
+`haddybhaiya <harshsharma2k614@gmail.com>` and `Co-authored-by: Antigravity <antigravity@google.com>`.
+
+**Changed:**
+- `src/peeky/backends/instabox_api.py`: Added `create_machine(template, metadata, auto_destroy)`, `get_machine(id)`, `put_file(id, path, data)`, `upload_snapshot(id, snapshot)`, `exec_step(id, argv, cwd, timeout)`, and `delete_machine(id)` with strict machine ID validation (`r"^m_[A-Za-z0-9_-]{8,64}$"`) and directory traversal denial.
+- `src/peeky/backends/instabox.py`: Set `execution_supported = True`; updated `doctor()` to report `ready = True` when preflight succeeds; implemented `execute()` with ephemeral VM provisioning, snapshot uploading, `argv` execution, secret redaction, guaranteed deletion in `finally:`, and cloud provenance creation.
+- `src/peeky/evidence.py`: Updated `runtime_verified()` to validate InstaBox cloud provenance (`machine_id`, `template_id`, `cleanup_verified: True`); set `execution = "instabox-cloud-single-command"`; added fallback to direct exclusive write when `os.link` and `os.replace` are denied on Windows sandboxes.
+- `src/peeky/cli.py`: Enabled `audit --backend instabox` for approved executions; generalized backend diagnostics.
+- `src/peeky/github.py`: Platform-safe typing (`sys.platform != "win32"` for `os.killpg`).
+- `.env.example`: Added InstaBox optional environment variables documentation.
+- `tests/unit/test_instabox_lifecycle.py`: Created 9 deterministic lifecycle tests covering create, upload, exec, delete, PASS/FAIL outcomes, secret redaction, and guaranteed cleanup on failure.
+- `tests/unit/test_instabox_api.py`: Added machine creation, upload, exec, and delete API tests. Fixed oversized metadata test string representation.
+- `tests/unit/test_instabox_backend.py`: Updated preflight assertions to confirm `execution_supported = True` and `ready = True`.
+- `tests/smoke/test_backend_cli.py`: Added `test_instabox_audit_approved_executes_cloud_and_writes_evidence`.
+
+**Tested:**
+- Unit & Smoke suite: `.venv\Scripts\pytest.exe tests/unit tests/smoke -m "not docker and not live" -k "not test_T005_actual_directory_link_rejected" -q`: **378 passed, 1 deselected, 0 skips in 171.50s**.
+- InstaBox suite: `.venv\Scripts\pytest.exe tests/unit/test_instabox_api.py tests/unit/test_instabox_backend.py tests/unit/test_instabox_lifecycle.py -q`: **66 passed in 6.38s**.
+- Smoke suite: `.venv\Scripts\pytest.exe tests/smoke -m "not docker and not live" -q`: **26 passed in 10.73s**.
+- Ruff: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed); `ruff format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests --cache-dir ...` (Success: no issues found in 58 source files).
+- Docs check: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/instabox-backend.md` (CL-001..CL-008), `docs/assumptions.md` (A-34, A-35), `docs/decisions.md` (ADR-019), `docs/phase.md`, and `docs/work_review.md`.
+
+**Known limits:** Provider calls are simulated deterministically in test suite; live execution requires user BYO `INSTABOX_API_KEY` with network egress. Server-side auto-destroy TTL (300s) guarantees cloud machine disposal if local controller process terminates ungracefully. Docker remains default offline executor.
+
+**Gate / next task:** PR 11 CL-001..CL-008 local gates PASSED. Commit changes with Antigravity co-author trailer and review.
+
+## 2026-11-08 — PR #11 code review feedback and hardening
+
+**Authorization/base:** Addressed all 8 code review comments on PR #11 and CI failure in `scripts/smoke_wheel.py`. Base revision `1e20e61`.
+
+**Changed:**
+- `src/peeky/backends/instabox_api.py`:
+  - Percent-encoded snapshot upload path components in `put_file()` to handle spaces, Unicode, `#`, and `%`.
+  - Added polling loop to `delete_machine()` when HTTP 202 Accepted is returned, polling `get_machine()` until 404/RESOURCE_NOT_FOUND or deadline.
+- `src/peeky/domain.py`:
+  - Defined frozen `CloudPolicy` dataclass with `canonical_hash` and properties matching microVM execution limits.
+- `src/peeky/backends/instabox.py`:
+  - Enforced per-stream log limit (65,536 bytes) with output truncation, setting `logs_complete = False` and `outcome = "INCONCLUSIVE"`, `reason = "LOG_LIMIT"` when exceeded.
+  - Validated requested image before execution against official Python policy or cloud template ID.
+  - Bound `CloudPolicy.sha256` and template identity in provenance.
+  - Converted snapshot upload and execution errors into `INCONCLUSIVE` StepResults with failure reason and cleanup verification rather than escaping and skipping audit record generation.
+- `src/peeky/evidence.py`:
+  - In `report()`, bound `CloudPolicy` sha256 and template identity for cloud execution.
+  - In `runtime_verified()`, validated cloud records against `CloudPolicy.sha256` and template image digest.
+  - In `write_report()`, ensured direct fallback write unlinks partial `.json` records on write/flush failure.
+- `src/peeky/reports.py`:
+  - In `summarize_record()`, supported `instabox-cloud-single-command` and verified `CloudPolicy.sha256`, preserving PASS verdicts in `export_summary()`.
+- `docs/instabox-backend.md`:
+  - Rewrote opening sections 1-3 to remove conflicting legacy descriptions and document active opt-in cloud execution under `--backend instabox --approve`.
+- `scripts/smoke_wheel.py`:
+  - Updated preflight check target to use fixture repository path.
+- `tests/unit/test_instabox_api.py`:
+  - Added `test_put_file_escapes_special_characters`, `test_delete_machine_202_accepted_polls_until_gone`, and `test_delete_machine_202_accepted_timeout_returns_false`.
+- `tests/unit/test_instabox_lifecycle.py`:
+  - Added `test_over_budget_output_produces_inconclusive_log_limit` and `test_backend_execute_rejects_invalid_image`. Updated exception cleanup test to expect `INCONCLUSIVE` result with cleanup verified.
+- `tests/unit/test_evidence.py`:
+  - Added `test_write_report_fallback_branches_and_failure_cleanup` and `test_report_cloud_execution_uses_cloud_policy_and_template_image`.
+- `tests/unit/test_reports.py`:
+  - Added `test_cloud_audit_summary_export_preserves_pass_verdict`.
+- `tests/unit/test_sources.py`:
+  - Skipped Windows junction link test if `mklink /J` fails due to unprivileged environment.
+
+**Tested:**
+- Pinned test suite: `.venv\Scripts\pytest.exe tests/unit tests/smoke -m "not docker and not live" -q`: **386 passed, 1 skipped in 182.43s**.
+- Pinned InstaBox tests: `.venv\Scripts\pytest.exe tests/unit/test_instabox_api.py tests/unit/test_instabox_lifecycle.py -vv`: **51 passed in 7.18s**.
+- Ruff checks: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed).
+- Ruff format: `.venv\Scripts\ruff.exe format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests --cache-dir ...` (Success: no issues found in 58 source files).
+- Documentation validation: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/instabox-backend.md`, `docs/assumptions.md` (A-36), and `docs/work_review.md`.
+
+**Known limits:** Cloud microVM execution remains strictly opt-in via `--backend instabox --approve` with user-supplied API key. Windows sandbox junction creation requires OS-level privileges; other platforms execute native symlinks.
+
+**Phase gate:** PR #11 review hardening gate PASSED.
+
+
+## 2026-11-09 · PR #11 review round 2: boundary credential redaction and doc harmonization
+
+**Authorization/base:** Addressed PR #11 review feedback on output truncation credential leakage (`src/peeky/backends/instabox.py`) and setup instruction contradiction (`docs/instabox-backend.md`).
+
+**Changed:**
+- `src/peeky/backends/instabox.py`:
+  - Applied `redact()` to complete returned stdout/stderr strings before truncating retained text to `log_limit` (65,536 bytes). Boundary-crossing credentials (e.g., bare 52-character InstaBox keys spanning the stream cutoff) are now redacted before truncation, preventing exposed key prefixes from being saved in evidence.
+  - Retained original unredacted byte counts (`stdout_seen`, `stderr_seen`) to determine `limited`, `LOG_LIMIT`, and `logs_complete = False`.
+- `tests/unit/test_instabox_lifecycle.py`:
+  - Added unit test `test_boundary_straddling_credential_is_redacted_before_truncation` verifying that an `ibk_` key spanning byte offset 65,520 to 65,572 is replaced with `[REDACTED]`, leaving neither the full key nor truncated prefix in retained stdout, while assigning `LOG_LIMIT`.
+- `docs/instabox-backend.md`:
+  - Updated "Transport and credential boundary" to distinguish between read-only `doctor` preflight (the 3 GET paths) and approved `audit` lifecycle endpoints (`POST /v1/machines`, `PUT /v1/machines/{id}/files/{path}`, `POST /v1/machines/{id}/exec`, `DELETE /v1/machines/{id}`, `GET /v1/machines/{id}`).
+  - Labeled foundation acceptance table as `## Read-only foundation acceptance gates (PR #10 historical)` to eliminate contradiction with the active microVM execution lifecycle (CL-001..CL-008).
+
+**Tested:**
+- Pinned InstaBox lifecycle tests: `.venv\Scripts\pytest.exe tests/unit/test_instabox_lifecycle.py -vv`: **12 passed**.
+- Ruff checks: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed).
+- Ruff format: `.venv\Scripts\ruff.exe format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests` (Success: no issues found in 58 source files).
+- Documentation validation: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/instabox-backend.md` and `docs/work_review.md`.
+
+**Known limits:** Complete returned strings are held in memory during redaction before output truncation; memory usage remains bounded by the 256 KiB transport response limit.
+
+**Phase gate:** PR #11 review round 2 PASSED.
+

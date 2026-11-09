@@ -6,6 +6,7 @@ import os
 import re
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Iterator
@@ -148,7 +149,7 @@ def _git_command(root: Path, *args: str) -> list[str]:
 
 
 def _stop(process: subprocess.Popen[bytes]) -> None:
-    if os.name == "posix":
+    if sys.platform != "win32":
         # HTTPS Git uses helper children; terminate the whole owned process group.
         try:
             os.killpg(process.pid, signal.SIGKILL)

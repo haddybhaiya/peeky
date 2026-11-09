@@ -10,7 +10,13 @@ from pathlib import Path
 from typing import Any
 
 from .benchmark import summarize
-from .domain import DEFAULT_POLICY, SourceFile, SourceIdentity, canonical_hash
+from .domain import (
+    DEFAULT_POLICY,
+    CloudPolicy,
+    SourceFile,
+    SourceIdentity,
+    canonical_hash,
+)
 from .evidence import runtime_verified, write_report
 from .github import remote_from_record
 from .models import Step, StepResult
@@ -44,12 +50,20 @@ def summarize_record(record: dict[str, Any]) -> dict[str, Any]:
         results = [StepResult(**r) for r in record["results"]]
         outcome = record["verdict"]
         coverage = record.get("coverage", {})
+        is_cloud = record.get("execution") == "instabox-cloud-single-command"
+        results_list = record.get("results") or []
+        first_prov = results_list[0].get("provenance", {}) if results_list else {}
+        template_id = str(first_prov.get("template_id") or "ci")
+        expected_policy_sha256 = (
+            CloudPolicy(template_id=template_id).sha256 if is_cloud else DEFAULT_POLICY.sha256
+        )
         complete = (
             len(steps) == len(results) == 1
             and coverage.get("complete") is True
             and coverage.get("planned") == coverage.get("observed") == 1
-            and record.get("policy_sha256") == DEFAULT_POLICY.sha256
-            and record.get("execution") == "offline-docker-single-command"
+            and record.get("policy_sha256") == expected_policy_sha256
+            and record.get("execution")
+            in ("offline-docker-single-command", "instabox-cloud-single-command")
             and record.get("run", {}).get("state") == "FINALIZED"
             and all(r.outcome == "PASS" and r.exit_code == 0 for r in results)
             and all(runtime_verified(r, source, record["image"]) for r in results)

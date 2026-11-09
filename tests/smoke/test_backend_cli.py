@@ -71,24 +71,22 @@ def test_instabox_doctor_only_reads_metadata_and_never_exposes_keys(
     assert KEY not in output and calls == ["/v1/me", "/v1/templates", "/v1/usage"]
     if as_json:
         status = json.loads(output)
-        assert status["preflight_ok"] is True and status["ready"] is False
-        assert status["execution_supported"] is False
-        assert status["checks"]["create_delete_permissions"] == "not_verified"
+        assert status["preflight_ok"] is True and status["ready"] is True
+        assert status["execution_supported"] is True
+        assert status["checks"]["execution"] == "supported"
     else:
-        assert "not implemented" in output
+        assert "InstaBox: READY" in output
 
 
-@pytest.mark.parametrize("approved", [False, True])
-def test_instabox_audit_never_fetches_reads_keys_or_falls_back_to_docker(
+def test_instabox_audit_unapproved_never_fetches_reads_keys_or_falls_back_to_docker(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-    approved: bool,
 ) -> None:
     monkeypatch.setenv("INSTABOX_API_KEY", KEY)
 
     def forbidden(*args: object, **kwargs: object) -> None:
-        pytest.fail("Unsupported cloud execution touched credentials, source or Docker")
+        pytest.fail("Unapproved cloud audit touched credentials, source or Docker")
 
     monkeypatch.setattr(InstaboxConfig, "from_environment", forbidden)
     monkeypatch.setattr("peeky.cli.github_snapshot", forbidden)
@@ -104,10 +102,76 @@ def test_instabox_audit_never_fetches_reads_keys_or_falls_back_to_docker(
             "instabox",
             "--output",
             str(output),
-            *(["--approve"] if approved else []),
         ]
     )
-    assert code == (3 if approved else 2)
+    assert code == 2
     message = capsys.readouterr().err
-    assert ("not implemented" if approved else "not authorized") in message
+    assert "not authorized" in message
     assert KEY not in message and not output.exists()
+
+
+def test_instabox_audit_approved_executes_cloud_and_writes_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("INSTABOX_API_KEY", KEY)
+    mid = "m_test12345678"
+    data = {
+        "/v1/me": {"userId": 42, "login": "testuser", "activated": True},
+        "/v1/templates": {"templates": [{"id": "ci", "arch": "x86_64", "creatable": True}]},
+        "/v1/usage": {"machines": 0, "limits": {"maxMachines": 5, "unlimited": []}},
+    }
+
+    def transport(request: urllib.request.Request, timeout: float, limit: int) -> MetadataResponse:
+        url = request.full_url
+        method = request.get_method()
+        if method == "GET":
+            selector = request.selector
+            if selector in data:
+                return MetadataResponse(200, json.dumps(data[selector]).encode())
+        if method == "POST" and url.endswith("/v1/machines"):
+            return MetadataResponse(201, json.dumps({"id": mid, "status": "running"}).encode())
+        if method == "PUT" and "/files/" in url:
+            return MetadataResponse(204, b"")
+        if method == "POST" and url.endswith(f"/v1/machines/{mid}/exec"):
+            return MetadataResponse(
+                200,
+                json.dumps(
+                    {"exitCode": 0, "stdout": "smoke ok\n", "stderr": "", "timedOut": False}
+                ).encode(),
+            )
+        if method == "DELETE" and url.endswith(f"/v1/machines/{mid}"):
+            return MetadataResponse(204, b"")
+        return MetadataResponse(404, b"")
+
+    original = InstaboxClient
+    monkeypatch.setattr(
+        "peeky.backends.instabox.InstaboxClient", lambda config: original(config, transport)
+    )
+
+    def forbidden_docker(*args: object, **kwargs: object) -> None:
+        pytest.fail("InstaBox audit fell back to Docker")
+
+    monkeypatch.setattr("peeky.runner.execute", forbidden_docker)
+
+    output = tmp_path / "runs"
+    code = main(
+        [
+            "audit",
+            "tests/fixtures/good_repo",
+            "--backend",
+            "instabox",
+            "--output",
+            str(output),
+            "--approve",
+        ]
+    )
+    assert code == 0
+    records = list(output.glob("*.json"))
+    assert len(records) == 1
+    evidence = json.loads(records[0].read_text(encoding="utf-8"))
+    assert evidence["verdict"] == "PASS"
+    assert evidence["execution"] == "instabox-cloud-single-command"
+    assert evidence["results"][0]["provenance"]["backend"] == "instabox"
+    assert evidence["results"][0]["provenance"]["cleanup_verified"] is True

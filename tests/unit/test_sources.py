@@ -100,9 +100,11 @@ def test_T005_git_symlink_and_submodule_modes_rejected(
 def test_T005_actual_directory_link_rejected(repo: Path, tmp_path: Path) -> None:
     link = tmp_path / "linked"
     if os.name == "nt":
-        subprocess.run(
-            ["cmd", "/c", "mklink", "/J", str(link), str(repo)], check=True, capture_output=True
+        res = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(link), str(repo)], check=False, capture_output=True
         )
+        if res.returncode != 0:
+            pytest.skip("mklink /J not permitted in current environment")
     else:
         link.symlink_to(repo, target_is_directory=True)
     with pytest.raises(SourceError, match="reparse|Symlinks"):

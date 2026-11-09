@@ -1,13 +1,18 @@
-"""Read-only InstaBox preflight. Provisioning and cloud execution are deferred."""
+"""InstaBox backend for account preflight and cloud sandbox execution."""
 
 from __future__ import annotations
 
+import hashlib
+import time
 from pathlib import Path
 from typing import Any
 
+from ..domain import CloudPolicy
 from ..models import Step, StepResult
+from ..policy import PolicyError, safe_argv, validate_image
+from ..redaction import redact
 from ..sources import SourceSnapshot
-from .base import BackendReadiness, BackendUnavailable
+from .base import BackendReadiness
 from .instabox_api import InstaboxClient, InstaboxConfig, InstaboxError, MetadataTransport
 
 
@@ -50,7 +55,7 @@ def _template_available(data: dict[str, Any], template_id: str) -> bool:
 
 class InstaboxBackend:
     name = "instabox"
-    execution_supported = False
+    execution_supported = True
 
     def __init__(
         self, config: InstaboxConfig | None = None, transport: MetadataTransport | None = None
@@ -73,7 +78,9 @@ class InstaboxBackend:
         details: dict[str, object] = {"read_only": True}
 
         def result(ok: bool, reason: str, message: str) -> BackendReadiness:
-            return BackendReadiness(self.name, ok, False, reason, message, checks, details)
+            return BackendReadiness(
+                self.name, ok, self.execution_supported, reason, message, checks, details
+            )
 
         try:
             config = self._config if self._config is not None else InstaboxConfig.from_environment()
@@ -137,10 +144,16 @@ class InstaboxBackend:
                     "No machine slot is available in this account; review it in the dashboard",
                 )
             checks["machine_quota"] = "passed"
-            return result(
-                True,
-                "PREFLIGHT_OK",
-                "Read-only account checks passed; cloud audit execution is not implemented",
+            checks["execution"] = "supported"
+            details["execution_supported"] = True
+            return BackendReadiness(
+                self.name,
+                preflight_ok=True,
+                execution_supported=True,
+                reason="READY",
+                message="InstaBox account and cloud execution readiness confirmed",
+                checks=checks,
+                details=details,
             )
         except InstaboxError as error:
             if checks["configuration"] != "passed":
@@ -152,6 +165,143 @@ class InstaboxBackend:
             return result(False, error.code, str(error))
 
     def execute(self, step: Step, source: SourceSnapshot, image: str, timeout: float) -> StepResult:
-        raise BackendUnavailable(
-            "InstaBox audit execution is not implemented; use doctor --backend instabox for read-only account checks"
+        config = self._config if self._config is not None else InstaboxConfig.from_environment()
+        config.validate()
+        cloud_policy = CloudPolicy(template_id=config.template_id)
+        try:
+            if not (image == config.template_id or image == f"template:{config.template_id}"):
+                validate_image(image)
+        except PolicyError as err:
+            return StepResult(
+                id=step.id,
+                command=step.command,
+                exit_code=None,
+                stdout="",
+                stderr="",
+                outcome="INCONCLUSIVE",
+                duration_ms=0,
+                reason=f"Requested image '{image}' not supported: {err}",
+                provenance={
+                    "backend": "instabox",
+                    "template_id": config.template_id,
+                    "policy_sha256": cloud_policy.sha256,
+                    "cleanup_verified": True,
+                    "logs_complete": True,
+                },
+            )
+
+        client = (
+            InstaboxClient(config)
+            if self._transport is None
+            else InstaboxClient(config, self._transport)
+        )
+        argv = safe_argv(step.command)
+        machine_id = client.create_machine(
+            template=config.template_id,
+            metadata={"creator": "peeky", "step_id": step.id},
+            auto_destroy_seconds=cloud_policy.auto_destroy_seconds,
+        )
+        cleanup_verified = False
+        duration_ms = 0
+        stdout = ""
+        stderr = ""
+        exit_code: int | None = None
+        outcome = "INCONCLUSIVE"
+        reason = ""
+        logs_complete = False
+        target_started = False
+        stdout_seen = 0
+        stderr_seen = 0
+        try:
+            client.upload_snapshot(machine_id, source, target_dir="/workspace")
+            start = time.monotonic()
+            raw_res = client.exec_step(machine_id, argv, cwd="/workspace", timeout=timeout)
+            duration_ms = int((time.monotonic() - start) * 1000)
+            target_started = True
+
+            raw_stdout = str(raw_res.get("stdout", ""))
+            raw_stderr = str(raw_res.get("stderr", ""))
+            stdout_bytes = raw_stdout.encode("utf-8")
+            stderr_bytes = raw_stderr.encode("utf-8")
+            stdout_seen = len(stdout_bytes)
+            stderr_seen = len(stderr_bytes)
+
+            log_limit = cloud_policy.log_bytes_per_stream
+            limited = stdout_seen > log_limit or stderr_seen > log_limit
+
+            # Redact complete returned strings before truncating retained text
+            redacted_stdout = redact(raw_stdout)
+            redacted_stderr = redact(raw_stderr)
+            redacted_stdout_bytes = redacted_stdout.encode("utf-8")
+            redacted_stderr_bytes = redacted_stderr.encode("utf-8")
+
+            if len(redacted_stdout_bytes) > log_limit:
+                stdout = redacted_stdout_bytes[:log_limit].decode("utf-8", errors="replace")
+            else:
+                stdout = redacted_stdout
+
+            if len(redacted_stderr_bytes) > log_limit:
+                stderr = redacted_stderr_bytes[:log_limit].decode("utf-8", errors="replace")
+            else:
+                stderr = redacted_stderr
+            exit_code = raw_res.get("exitCode")
+            timed_out = bool(raw_res.get("timedOut", False))
+            logs_complete = not (limited or timed_out)
+
+            if limited:
+                outcome = "INCONCLUSIVE"
+                reason = "LOG_LIMIT"
+            elif timed_out:
+                outcome = "TIMEOUT"
+                reason = "Command timed out in cloud sandbox"
+            elif exit_code == 0:
+                outcome = "PASS"
+                reason = ""
+            elif exit_code is not None:
+                outcome = "FAIL"
+                reason = f"Command failed with exit code {exit_code}"
+            else:
+                outcome = "INCONCLUSIVE"
+                reason = "Unknown execution outcome from InstaBox"
+        except InstaboxError as exc:
+            outcome = "INCONCLUSIVE"
+            reason = f"CLOUD_ERROR: {exc.code}"
+        except Exception as exc:
+            outcome = "INCONCLUSIVE"
+            reason = f"CLOUD_ERROR: {type(exc).__name__}"
+        finally:
+            try:
+                cleanup_verified = client.delete_machine(machine_id)
+            except Exception:
+                cleanup_verified = False
+
+        provenance = {
+            "backend": "instabox",
+            "machine_id": machine_id,
+            "template_id": config.template_id,
+            "image": f"template:{config.template_id}",
+            "image_digest": f"template:{config.template_id}",
+            "requested_image": image,
+            "cloud": True,
+            "source_sha256": source.identity.source_sha256,
+            "policy_sha256": cloud_policy.sha256,
+            "target_started": target_started,
+            "logs_complete": logs_complete,
+            "cleanup_verified": cleanup_verified,
+            "duration_ms": duration_ms,
+            "stdout_bytes_seen": stdout_seen,
+            "stderr_bytes_seen": stderr_seen,
+            "stdout_sha256": hashlib.sha256(stdout.encode("utf-8")).hexdigest(),
+            "stderr_sha256": hashlib.sha256(stderr.encode("utf-8")).hexdigest(),
+        }
+        return StepResult(
+            id=step.id,
+            command=step.command,
+            exit_code=exit_code,
+            stdout=stdout,
+            stderr=stderr,
+            outcome=outcome,
+            duration_ms=duration_ms,
+            reason=reason,
+            provenance=provenance,
         )

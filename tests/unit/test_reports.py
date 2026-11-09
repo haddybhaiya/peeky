@@ -2,10 +2,12 @@
 
 import hashlib
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
 
+from peeky.domain import CloudPolicy
 from peeky.evidence import write_report
 from peeky.passport import PassportError, make_passport
 from peeky.repair import load_record
@@ -185,3 +187,33 @@ def test_redacted_ref_tampering_still_fails_authentication(
     artifact.write_text(json.dumps(saved))
     with pytest.raises(ValueError, match="integrity"):
         export_summary([artifact], tmp_path / "tampered-redacted-summary")
+
+
+def test_cloud_audit_summary_export_preserves_pass_verdict(
+    evidence_file: Path, tmp_path: Path
+) -> None:
+    data = load_record(evidence_file)
+    cloud_policy = CloudPolicy(template_id="ci")
+    data["execution"] = "instabox-cloud-single-command"
+    data["image"] = "template:ci"
+    data["image_digest"] = "template:ci"
+    data["policy"] = asdict(cloud_policy)
+    data["policy_sha256"] = cloud_policy.sha256
+    prov = data["results"][0]["provenance"]
+    prov["backend"] = "instabox"
+    prov["template_id"] = "ci"
+    prov["image"] = "template:ci"
+    prov["image_digest"] = "template:ci"
+    prov["policy_sha256"] = cloud_policy.sha256
+    prov["machine_id"] = "m_test123"
+    prov["cleanup_verified"] = True
+    prov["target_started"] = True
+    prov["logs_complete"] = True
+
+    artifact = write_report(data, tmp_path / "cloud-input")
+    path = export_summary([artifact], tmp_path / "cloud-export")
+    summary = load_record(path)
+    assert summary["records"][0]["outcome"] == "PASS"
+    assert summary["records"][0]["complete_pass_observation"] is True
+    assert summary["records"][0]["image"] == "template:ci"
+    assert summary["records"][0]["policy_sha256"] == cloud_policy.sha256

@@ -8,7 +8,14 @@ import os
 from dataclasses import asdict
 from pathlib import Path
 
-from .domain import DEFAULT_POLICY, RunPolicy, RunRecord, RunState, SourceIdentity
+from .domain import (
+    DEFAULT_POLICY,
+    CloudPolicy,
+    RunPolicy,
+    RunRecord,
+    RunState,
+    SourceIdentity,
+)
 from .github import RemoteSource
 from .models import Step, StepResult
 from .provenance import authenticate
@@ -53,6 +60,21 @@ def verdict(steps: list[Step], results: list[StepResult]) -> str:
 
 def runtime_verified(result: StepResult, source: SourceIdentity, image: str) -> bool:
     p = result.provenance
+    if p.get("backend") == "instabox":
+        template_id = str(p.get("template_id") or "ci")
+        cloud_policy = CloudPolicy(template_id=template_id)
+        return (
+            p.get("source_sha256") == source.source_sha256
+            and p.get("policy_sha256") == cloud_policy.sha256
+            and bool(p.get("machine_id"))
+            and bool(p.get("template_id"))
+            and p.get("image_digest") == f"template:{template_id}"
+            and p.get("target_started") is True
+            and p.get("logs_complete") is True
+            and p.get("cleanup_verified") is True
+            and p.get("stdout_sha256") == hashlib.sha256(result.stdout.encode()).hexdigest()
+            and p.get("stderr_sha256") == hashlib.sha256(result.stderr.encode()).hexdigest()
+        )
     return (
         p.get("source_sha256") == source.source_sha256
         and p.get("policy_sha256") == DEFAULT_POLICY.sha256
@@ -95,20 +117,39 @@ def report(
         repository = repo.url
     else:
         repository = str(repo.resolve())
+    is_cloud = any(r.provenance.get("backend") == "instabox" for r in results)
+    template_id = next(
+        (str(r.provenance.get("template_id")) for r in results if r.provenance.get("template_id")),
+        None,
+    )
+    if is_cloud and template_id:
+        effective_policy: RunPolicy | CloudPolicy = CloudPolicy(template_id=template_id)
+        effective_image = f"template:{template_id}"
+        effective_image_digest: str | None = f"template:{template_id}"
+    else:
+        effective_policy = policy
+        effective_image = image
+        effective_image_digest = next(
+            (
+                str(r.provenance.get("image_digest"))
+                for r in results
+                if r.provenance.get("image_digest")
+            ),
+            None,
+        )
     data: dict[str, object] = {
         "schema_version": "1.2",
         "repo": repository,
         "readme_sha256": readme_hash,
         "source": asdict(source),
-        "policy": asdict(policy),
-        "policy_sha256": policy.sha256,
+        "policy": asdict(effective_policy),
+        "policy_sha256": effective_policy.sha256,
         "run": run.dict(),
-        "image": image,
-        "execution": "offline-docker-single-command",
-        "image_digest": next(
-            (r.provenance.get("image_digest") for r in results if r.provenance.get("image_digest")),
-            None,
-        ),
+        "image": effective_image,
+        "execution": "instabox-cloud-single-command"
+        if is_cloud
+        else "offline-docker-single-command",
+        "image_digest": effective_image_digest,
         "coverage": {
             "planned": len(steps),
             "observed": len(results),
@@ -151,7 +192,22 @@ def write_report(data: dict[str, object], output: Path) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         # Atomic, exclusive visibility on supported local filesystems; never replace a record.
-        os.link(temporary, target)
+        try:
+            os.link(temporary, target)
+        except (PermissionError, OSError):
+            if target.exists():
+                raise FileExistsError(f"Record {target} already exists") from None
+            try:
+                os.replace(temporary, target)
+            except (PermissionError, OSError):
+                try:
+                    with target.open("x", encoding="utf-8") as dest:
+                        dest.write(encoded)
+                        dest.flush()
+                        os.fsync(dest.fileno())
+                except Exception:
+                    target.unlink(missing_ok=True)
+                    raise
     finally:
         temporary.unlink(missing_ok=True)
     return target
