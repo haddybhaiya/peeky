@@ -791,3 +791,27 @@ execution for InstaBox microVMs following PR #10. Preserves author/committer
 
 **Phase gate:** Local key format hardening PASSED.
 
+
+## 2026-11-10 · Support signed/negative integer user IDs from InstaBox `/v1/me` response
+
+**Authorization/base:** Diagnosed and fixed rejection of live InstaBox account metadata where `userId` is a signed negative integer (e.g. `-17754`).
+
+**Changed:**
+- `src/peeky/backends/instabox.py`:
+  - Relaxed account preflight validation from `type(userId) is int and userId > 0` to `type(userId) is int`, accepting signed integers returned by InstaBox account systems.
+- `tests/unit/test_instabox_backend.py`:
+  - Added unit test `test_preflight_accepts_negative_or_signed_user_id` verifying that negative integer user IDs are accepted and recorded in `account_id` details.
+
+**Tested:**
+- Pinned InstaBox backend tests: `.venv\Scripts\pytest.exe tests/unit/test_instabox_backend.py -vv`: **21 passed in 2.10s**.
+- Ruff checks: `.venv\Scripts\ruff.exe check . --no-cache` (all checks passed).
+- Ruff format: `.venv\Scripts\ruff.exe format --check . --no-cache` (63 files already formatted).
+- Mypy: `.venv\Scripts\mypy.exe src tests` (Success: no issues found in 58 source files).
+- Documentation validation: `.venv\Scripts\python.exe scripts/check_docs.py` (Checked 21 required files).
+
+**Docs updated:** `docs/work_review.md`.
+
+**Known limits:** `userId` must still be a numeric integer in JSON; non-integer or boolean types remain rejected.
+
+**Phase gate:** Live account metadata compatibility PASSED.
+
