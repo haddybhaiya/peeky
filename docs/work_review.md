@@ -764,3 +764,30 @@ execution for InstaBox microVMs following PR #10. Preserves author/committer
 
 **Phase gate:** PR #11 review round 2 PASSED.
 
+
+## 2026-11-10 · Support real-world InstaBox API key length range (48 to 64 chars)
+
+**Authorization/base:** Authorized by user to expand InstaBox API key format validation to support real-world provider keys (e.g., 56 characters total / 52 chars payload).
+
+**Changed:**
+- `src/peeky/backends/instabox_api.py`:
+  - Broadened API key validator from exact `{48}` to `{48,64}` alphanumeric/dash/underscore characters (`r"ibk_[A-Za-z0-9_-]{48,64}"`), allowing production keys with 52+ payload characters.
+- `src/peeky/redaction.py`:
+  - Updated pattern `_INSTABOX_KEY` to `r"(?<![A-Za-z0-9_-])ibk_[A-Za-z0-9_-]{48,64}(?![A-Za-z0-9_-])"` so redaction covers all valid key lengths without environment context.
+- `tests/unit/test_instabox_api.py`:
+  - Added parametrized tests for 48, 52, and 64 character payloads for key redaction, and bounded length tests for invalid keys.
+- `docs/instabox-backend.md`:
+  - Updated configuration table to describe `INSTABOX_API_KEY` as an official `ibk_` API key.
+
+**Tested:**
+- Pinned InstaBox tests: `.venv\Scripts\pytest.exe tests/unit/test_instabox_api.py tests/unit/test_instabox_lifecycle.py tests/unit/test_instabox_backend.py -vv`: **81 passed in 29.86s**.
+- Ruff lint / format: All checks passed; 63 files formatted.
+- Mypy: Success: no issues found in 58 source files.
+- Documentation validation: `scripts/check_docs.py` passed (21 required files).
+
+**Docs updated:** `docs/instabox-backend.md` and `docs/work_review.md`.
+
+**Known limits:** API keys with fewer than 48 or more than 64 payload characters remain rejected as invalid before network calls.
+
+**Phase gate:** Local key format hardening PASSED.
+
