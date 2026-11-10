@@ -27,7 +27,18 @@ def test_byok_environment_config_is_secret_and_explicit(monkeypatch: pytest.Monk
     assert KEY not in repr(config)
 
 
-@pytest.mark.parametrize("key", ["", "ibk_short", KEY + "\n", "iba_" + "a" * 48])
+@pytest.mark.parametrize(
+    "key",
+    [
+        "",
+        "ibk_short",
+        "ibk_" + "a" * 47,
+        "ibk_" + "a" * 65,
+        KEY + "\n",
+        "iba_" + "a" * 48,
+        "iba_" + "a" * 52,
+    ],
+)
 def test_invalid_keys_fail_before_network(key: str) -> None:
     with pytest.raises(InstaboxError) as error:
         InstaboxClient(InstaboxConfig(key))
@@ -98,12 +109,13 @@ def test_malformed_or_oversized_metadata_cannot_succeed(body: bytes) -> None:
         InstaboxClient(InstaboxConfig(KEY), transport).get("/v1/me")
 
 
+@pytest.mark.parametrize("payload_len", [48, 52, 64])
 @pytest.mark.parametrize("suffix", ["a", "_", "-"])
 def test_instabox_key_format_is_redacted_without_environment_context(
-    monkeypatch: pytest.MonkeyPatch, suffix: str
+    monkeypatch: pytest.MonkeyPatch, payload_len: int, suffix: str
 ) -> None:
     monkeypatch.delenv("INSTABOX_API_KEY", raising=False)
-    key = "ibk_" + "a" * 47 + suffix
+    key = "ibk_" + "a" * (payload_len - 1) + suffix
     InstaboxConfig(key).validate()
     assert redact("copied credential: " + key) == "copied credential: [REDACTED]"
 
