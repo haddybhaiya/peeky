@@ -19,7 +19,7 @@ _TOKEN = re.compile(
     r"\b(?:gh[pousr]_[A-Za-z0-9_]{12,}|github_pat_[A-Za-z0-9_]{12,}"
     r"|sk-[A-Za-z0-9_-]{12,}|AKIA[A-Z0-9]{16})\b"
 )
-_INSTABOX_KEY = re.compile(r"(?<![A-Za-z0-9_-])ibk_[A-Za-z0-9_-]{48}(?![A-Za-z0-9_-])")
+_INSTABOX_KEY = re.compile(r"(?<![A-Za-z0-9_-])ibk_[A-Za-z0-9_-]{48,64}(?![A-Za-z0-9_-])")
 _PRIVATE = re.compile(
     r"-----BEGIN [^-]*PRIVATE KEY-----.*?(?:-----END [^-]*PRIVATE KEY-----|\Z)", re.DOTALL
 )

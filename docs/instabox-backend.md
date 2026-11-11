@@ -23,7 +23,7 @@ Gemma model workflow; do not put InstaBox fields in that model configuration.
 
 | Environment variable | Meaning |
 |---|---|
-| `INSTABOX_API_KEY` | Required for InstaBox doctor and audit; a 52-character `ibk_` API key |
+| `INSTABOX_API_KEY` | Required for InstaBox doctor and audit; an official `ibk_` API key |
 | `INSTABOX_API_URL` | Optional; only the exact official `https://api.instabox.sh` origin is accepted |
 | `PEEKY_INSTABOX_TEMPLATE` | Optional catalog template ID, default `ci`; requires an offered x86_64 template |
 

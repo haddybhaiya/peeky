@@ -93,7 +93,7 @@ class InstaboxBackend:
                 else InstaboxClient(config, self._transport)
             )
             account = client.get("/v1/me")
-            _require(type(account.get("userId")) is int and account["userId"] > 0)
+            _require(type(account.get("userId")) is int)
             _require(isinstance(account.get("login"), str) and bool(account["login"]))
             checks["authentication"] = "passed"
             details["account_id"] = account["userId"]

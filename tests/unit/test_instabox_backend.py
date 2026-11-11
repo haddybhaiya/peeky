@@ -43,6 +43,14 @@ def test_preflight_success_confirms_cloud_readiness() -> None:
     assert KEY not in json.dumps(status.to_dict())
 
 
+def test_preflight_accepts_negative_or_signed_user_id() -> None:
+    data = responses()
+    data["/v1/me"] = {"userId": -17754, "login": "user@example.com", "activated": True}
+    status = backend(data, []).doctor()
+    assert status.preflight_ok and status.ready
+    assert status.details["account_id"] == -17754
+
+
 @pytest.mark.parametrize(
     ("change", "reason"),
     [

@@ -40,10 +40,8 @@ class InstaboxConfig:
     def validate(self) -> None:
         if not self.api_key:
             raise InstaboxError("MISSING_API_KEY", "Set INSTABOX_API_KEY to your InstaBox API key")
-        if not re.fullmatch(r"ibk_[A-Za-z0-9_-]{48}", self.api_key):
-            raise InstaboxError(
-                "INVALID_API_KEY", "INSTABOX_API_KEY must be a 52-character ibk_ API key"
-            )
+        if not re.fullmatch(r"ibk_[A-Za-z0-9_-]{48,64}", self.api_key):
+            raise InstaboxError("INVALID_API_KEY", "INSTABOX_API_KEY must be a valid ibk_ API key")
         if self.api_url != API_URL:
             raise InstaboxError(
                 "INVALID_API_URL", "This backend supports only https://api.instabox.sh"
